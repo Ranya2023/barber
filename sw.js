@@ -1,8 +1,9 @@
 // سێرڤس وۆرکەر — هەڵگرتنی پەڕەکان بۆ کارکردن بەبێ ئینتەرنێت (شێوەکار)
-const CACHE = 'barber-app-v2';
+const CACHE = 'barber-app-v3';
 const ASSETS = [
   './dashboard.html',
   './booking.html',
+  './queue.html',
   './admin.html',
   './config.js',
   './manifest.json',

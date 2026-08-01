@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B1714">
+<title>چوونە ڕیز — Barber Queue</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      fontFamily: { kurdish: ['Vazirmatn','sans-serif'] },
+      colors: { brass:'#C9A356', barberred:'#B33A3A', inkbg:'#1B1714', panel:'#241E1A' }
+    }}
+  }
+</script>
+<style>
+  html { font-size: 18px; -webkit-tap-highlight-color: transparent; }
+  * { font-family: 'Vazirmatn', sans-serif; }
+  body { -webkit-text-size-adjust: 100%; }
+  .pole-strip { background: repeating-linear-gradient(-45deg, #F7F3EC 0 10px, #B33A3A 10px 20px, #F7F3EC 20px 30px, #C9A356 30px 40px); }
+  .step-seg { height: 6px; border-radius: 999px; flex: 1; transition: background .3s; }
+  .tap { transition: transform .08s ease; }
+  .tap:active { transform: scale(.96); }
+  ::-webkit-scrollbar { display: none; }
+  input:focus-visible, button:focus-visible { outline: 2px solid #C9A356; outline-offset: 2px; }
+</style>
+</head>
+<body class="min-h-screen bg-[#F7F3EC] dark:bg-inkbg text-[#1B1714] dark:text-[#F7F3EC] transition-colors">
+
+<div class="max-w-md mx-auto min-h-screen flex flex-col pb-10" style="padding-top: env(safe-area-inset-top);">
+
+  <header class="flex items-center justify-between px-5 pt-5 pb-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full pole-strip shadow-inner border border-black/10"></div>
+      <div>
+        <div id="shopName" class="font-extrabold text-xl leading-none">…</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-1">🪑 چوونە ڕیزی چاوەڕوانی</div>
+      </div>
+    </div>
+    <button id="themeToggle" class="tap w-11 h-11 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-xl border border-black/5 dark:border-white/10">🌙</button>
+  </header>
+
+  <div id="stepBar" class="flex gap-1.5 px-5 mb-4">
+    <div class="step-seg bg-brass"></div>
+    <div class="step-seg bg-black/10 dark:bg-white/10"></div>
+    <div class="step-seg bg-black/10 dark:bg-white/10"></div>
+    <div class="step-seg bg-black/10 dark:bg-white/10"></div>
+  </div>
+
+  <main class="flex-1 px-5">
+
+    <div id="loadingView" class="flex flex-col items-center justify-center py-24 gap-3">
+      <div class="w-10 h-10 border-4 border-brass border-t-transparent rounded-full animate-spin"></div>
+      <div class="text-base text-[#6b6259] dark:text-[#8A7F72]">چاوەڕێ بە...</div>
+    </div>
+
+    <div id="errorView" class="hidden text-center py-20">
+      <div class="text-5xl mb-3">⚠️</div>
+      <div id="errorText" class="text-barberred font-semibold text-base"></div>
+    </div>
+
+    <!-- ١) ناو و ژمارە -->
+    <section id="step1" class="app-step hidden">
+      <h2 class="text-2xl font-extrabold mb-1">بەخێربێیت 👋</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">ئەمە ڕیزێکی چاوەڕوانییە بەبێ کاتێکی وردی دیاریکراو — تەنها ڕۆژ و بەیانی/نیوەڕۆ/ئێوارە هەڵدەبژێریت</p>
+      <label class="block text-sm font-semibold mb-1.5">ناوی تەواو</label>
+      <input id="inpName" type="text" placeholder="بۆ نموونە: ئاسۆ محەمەد"
+        class="w-full rounded-xl px-4 py-3.5 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base">
+      <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل (ئارەزوومەندانە)</label>
+      <input id="inpPhone" type="tel" inputmode="tel" placeholder="07XXXXXXXXX"
+        class="w-full rounded-xl px-4 py-3.5 mb-6 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base" dir="ltr" style="text-align:right">
+      <button id="toStep2" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-brass/20">بەردەوامبوون ←</button>
+    </section>
+
+    <!-- ٢) سێرڤس (ئارەزوومەندانە) -->
+    <section id="step2" class="app-step hidden">
+      <h2 class="text-2xl font-extrabold mb-1">سێرڤسەکە هەڵبژێرە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">چ خزمەتگوزاریەکت دەوێت؟</p>
+      <div id="serviceList" class="flex flex-col gap-3 mb-3"></div>
+      <button id="skipService" class="tap w-full text-center py-2.5 mb-2 text-sm text-brass font-bold">بەبێ دیاریکردنی سێرڤس، بەردەوامبە ←</button>
+      <button id="backTo1" class="tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]">→ گەڕانەوە</button>
+    </section>
+
+    <!-- ٣) ڕۆژی هەفتە -->
+    <section id="step3" class="app-step hidden">
+      <h2 class="text-2xl font-extrabold mb-1">ڕۆژی هەفتە هەڵبژێرە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">لە کام ڕۆژدا دێیت؟</p>
+      <div id="weekdayGrid" class="grid grid-cols-2 gap-2.5 mb-6"></div>
+      <div id="noWeekdays" class="hidden text-center py-8 text-base text-[#6b6259] dark:text-[#8A7F72]">ئەم سەرتاشە هێشتا ڕۆژی کاری دیاری نەکردووە 😕</div>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="2">→ گەڕانەوە</button>
+    </section>
+
+    <!-- ٤) بەیانی/نیوەڕۆ/ئێوارە -->
+    <section id="step4" class="app-step hidden">
+      <h2 class="text-2xl font-extrabold mb-1">کام کاتی ڕۆژ؟</h2>
+      <p id="chosenDateLabel" class="text-base text-brass font-semibold mb-5"></p>
+      <div id="periodGrid" class="grid grid-cols-2 gap-2.5 mb-6"></div>
+      <div id="noPeriods" class="hidden text-center py-8 text-base text-[#6b6259] dark:text-[#8A7F72]">ئەم ڕۆژە هیچ کاتێکی کاری نییە 😕</div>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="3">→ گەڕانەوە</button>
+    </section>
+
+    <!-- پشتڕاستکردنەوە -->
+    <section id="stepConfirm" class="app-step hidden">
+      <h2 class="text-2xl font-extrabold mb-1">پشتڕاستکردنەوە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">تکایە زانیارییەکان پشکنین بکە</p>
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 overflow-hidden mb-6 shadow-sm">
+        <div class="pole-strip h-2"></div>
+        <div class="p-5 space-y-3 text-base" id="confirmDetails"></div>
+      </div>
+      <button id="confirmBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-brass/20 mb-2">✓ دڵنیام، زیادمبکە بۆ ڕیز</button>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="4">→ گەڕانەوە</button>
+    </section>
+
+    <!-- سەرکەوتوو -->
+    <section id="stepSuccess" class="app-step hidden text-center">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="text-2xl font-extrabold mb-2">زیادکرایت بۆ ڕیز!</h2>
+      <p id="positionText" class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-6"></p>
+      <div class="rounded-2xl bg-white dark:bg-panel border border-brass/40 overflow-hidden mb-6 shadow-sm text-right">
+        <div class="pole-strip h-2"></div>
+        <div class="p-5 space-y-3 text-base" id="successDetails"></div>
+      </div>
+      <button id="newJoinBtn" class="tap w-full bg-transparent border-2 border-brass text-brass font-extrabold py-3.5 rounded-xl text-base">زیادکردنی کەسێکی تر</button>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const params = new URLSearchParams(location.search);
+const barberId = params.get('b');
+
+const WEEKDAY_LABELS = ['یەکشەممە','دووشەممە','سێشەممە','چوارشەممە','پێنجشەممە','هەینی','شەممە'];
+const WEEKDAY_ORDER  = [6,0,1,2,3,4,5];
+const PERIOD_DEFS = [
+  { id:'بەیانی',  label:'بەیانی', icon:'🌅', enabledKey:'morning_enabled',   startKey:'morning_start',   endKey:'morning_end' },
+  { id:'نیوەڕۆ', label:'نیوەڕۆ', icon:'☀️', enabledKey:'afternoon_enabled', startKey:'afternoon_start', endKey:'afternoon_end' },
+  { id:'ئێوارە', label:'ئێوارە', icon:'🌆', enabledKey:'evening_enabled',   startKey:'evening_start',   endKey:'evening_end' },
+];
+
+let barberInfo = null;
+let servicesCache = [];
+let workingHoursCache = [];
+let blockedDatesCache = [];
+let state = { name:'', phone:'', serviceId:null, serviceName:'', weekday:null, weekOffset:0, date:null, period:null };
+
+// ---------- تیم ----------
+function applyTheme(t){
+  document.documentElement.classList.toggle('dark', t==='dark');
+  document.getElementById('themeToggle').textContent = t==='dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', t);
+}
+(function initTheme(){ applyTheme(localStorage.getItem('theme') || 'dark'); })();
+document.getElementById('themeToggle').onclick = () => {
+  applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+};
+
+// ---------- ستێپەکان ----------
+const STEP_ORDER = ['step1','step2','step3','step4','stepConfirm','stepSuccess'];
+function showStep(id){
+  document.querySelectorAll('.app-step').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  const idx = STEP_ORDER.indexOf(id);
+  const segs = document.querySelectorAll('#stepBar .step-seg');
+  segs.forEach((seg,i)=>{
+    seg.classList.toggle('bg-brass', i <= Math.min(idx,3));
+    seg.classList.toggle('bg-black/10', i > Math.min(idx,3));
+    seg.classList.toggle('dark:bg-white/10', i > Math.min(idx,3));
+  });
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.backBtn').forEach(b=>{
+  b.onclick = () => showStep('step' + b.dataset.to);
+});
+
+// ---------- دەستپێکردن ----------
+async function init(){
+  if (!barberId) { showError('ئەم لینکە تەواو نییە. تکایە لینکی QR یان لینکی سەرتاشەکە بەکاربهێنە.'); return; }
+  try {
+    const { data: infoRows, error: infoErr } = await sb.rpc('rpc_get_barber_public_info', { p_barber_id: barberId });
+    if (infoErr) throw infoErr;
+    barberInfo = infoRows && infoRows[0];
+    if (!barberInfo || !barberInfo.active) { showError('ئەم سەرتاشە بەردەست نییە.'); return; }
+    document.getElementById('shopName').textContent = barberInfo.shop_name;
+
+    const [{ data: svcData }, { data: whData }, { data: bdData }] = await Promise.all([
+      sb.from('services').select('*').eq('barber_id', barberId).order('created_at'),
+      sb.from('working_hours').select('*').eq('barber_id', barberId),
+      sb.from('blocked_dates').select('*').eq('barber_id', barberId)
+    ]);
+    servicesCache = svcData || [];
+    workingHoursCache = whData || [];
+    blockedDatesCache = bdData || [];
+
+    renderServices();
+    renderWeekdays();
+
+    document.getElementById('loadingView').classList.add('hidden');
+    showStep('step1');
+  } catch (e) {
+    showError(e.message);
+  }
+}
+function showError(msg){
+  document.getElementById('loadingView').classList.add('hidden');
+  document.getElementById('errorView').classList.remove('hidden');
+  document.getElementById('errorText').textContent = msg;
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function weekdayName(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return WEEKDAY_LABELS[d.getDay()];
+}
+
+// ---------- ستێپ ١: ناو/ژمارە ----------
+document.getElementById('toStep2').onclick = () => {
+  const name = document.getElementById('inpName').value.trim();
+  const phone = document.getElementById('inpPhone').value.trim();
+  if (!name) return alert('تکایە ناوت بنووسە');
+  state.name = name; state.phone = phone;
+  showStep('step2');
+};
+document.getElementById('backTo1').onclick = () => showStep('step1');
+
+// ---------- ستێپ ٢: سێرڤس (ئارەزوومەندانە) ----------
+function renderServices(){
+  const wrap = document.getElementById('serviceList');
+  wrap.innerHTML = '';
+  servicesCache.forEach(s=>{
+    const card = document.createElement('button');
+    card.className = 'tap w-full text-right rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel p-4 flex items-center justify-between svc-card';
+    card.innerHTML = `
+      <div>
+        <div class="font-bold text-base">${esc(s.name)}</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-1">${s.duration} خولەک</div>
+      </div>
+      <div class="text-brass font-extrabold text-base">${s.price!=null ? s.price+' د.ع' : ''}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.svc-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
+      card.classList.add('ring-2','ring-brass');
+      state.serviceId = s.id; state.serviceName = s.name;
+      setTimeout(()=>showStep('step3'), 150);
+    };
+    wrap.appendChild(card);
+  });
+}
+document.getElementById('skipService').onclick = () => {
+  state.serviceId = null; state.serviceName = '';
+  showStep('step3');
+};
+
+// ---------- ستێپ ٣: ڕۆژی هەفتە ----------
+function renderWeekdays(){
+  const wrap = document.getElementById('weekdayGrid');
+  wrap.innerHTML = '';
+  const workingDays = WEEKDAY_ORDER.filter(wd => {
+    const wh = workingHoursCache.find(w=>w.weekday===wd);
+    return wh && wh.is_working;
+  });
+  document.getElementById('noWeekdays').classList.toggle('hidden', workingDays.length>0);
+  workingDays.forEach(wd=>{
+    const btn = document.createElement('button');
+    btn.className = 'tap wd-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-4 font-bold text-base';
+    btn.textContent = WEEKDAY_LABELS[wd];
+    btn.onclick = () => {
+      document.querySelectorAll('.wd-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
+      btn.classList.add('ring-2','ring-brass');
+      state.weekday = wd; state.weekOffset = 0;
+      computeDate();
+      renderPeriods();
+      showStep('step4');
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function computeDate(){
+  const today = new Date();
+  let diff = (state.weekday - today.getDay() + 7) % 7;
+  const d = new Date(today);
+  d.setDate(d.getDate() + diff + (state.weekOffset*7));
+  state.date = fmt(d);
+
+  let guard = 0;
+  while (blockedDatesCache.some(bd=>bd.date===state.date) && guard < 8) {
+    const dd = new Date(state.date + 'T00:00:00');
+    dd.setDate(dd.getDate()+7);
+    state.date = fmt(dd);
+    guard++;
+  }
+  document.getElementById('chosenDateLabel').textContent = `${WEEKDAY_LABELS[new Date(state.date+'T00:00:00').getDay()]} — ${state.date}`;
+}
+function fmt(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// ---------- ستێپ ٤: بەیانی/نیوەڕۆ/ئێوارە ----------
+function currentWorkingHours(){
+  return workingHoursCache.find(w=>w.weekday===state.weekday);
+}
+function renderPeriods(){
+  const wrap = document.getElementById('periodGrid');
+  wrap.innerHTML = '';
+  const wh = currentWorkingHours();
+  const active = PERIOD_DEFS.filter(p => wh && wh[p.enabledKey]);
+  document.getElementById('noPeriods').classList.toggle('hidden', active.length>0);
+  active.forEach(p=>{
+    const btn = document.createElement('button');
+    const hasHours = wh[p.startKey] && wh[p.endKey];
+    btn.className = 'tap pr-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-5 font-bold text-base flex flex-col items-center gap-1.5';
+    btn.innerHTML = `<span class="text-2xl">${p.icon}</span><span>${p.label}</span>${hasHours ? `<span class="text-xs text-[#6b6259] dark:text-[#8A7F72]" dir="ltr">${wh[p.startKey].substring(0,5)}–${wh[p.endKey].substring(0,5)}</span>` : ''}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.pr-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
+      btn.classList.add('ring-2','ring-brass');
+      state.period = p.id;
+      renderConfirm();
+      setTimeout(()=>showStep('stepConfirm'), 150);
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+// ---------- پشتڕاستکردنەوە ----------
+function renderConfirm(){
+  document.getElementById('confirmDetails').innerHTML = row('👤','ناو', esc(state.name)) +
+    (state.phone ? row('📱','ژمارە', esc(state.phone)) : '') +
+    (state.serviceName ? row('✂️','سێرڤس', esc(state.serviceName)) : '') +
+    row('📅','بەروار', weekdayName(state.date)+' — '+state.date) +
+    row('🕐','کات', state.period);
+}
+function row(icon,label,val){
+  return `<div class="flex items-center justify-between"><span class="text-[#6b6259] dark:text-[#8A7F72]">${icon} ${label}</span><span class="font-bold">${val}</span></div>`;
+}
+
+document.getElementById('confirmBtn').onclick = async () => {
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true; btn.textContent = 'تکایە چاوەڕێ بە...';
+  try {
+    const { data, error } = await sb.rpc('rpc_queue_join', {
+      p_barber_id: barberId, p_name: state.name, p_phone: state.phone || null,
+      p_service_id: state.serviceId, p_date: state.date, p_period: state.period
+    });
+    if (error) throw error;
+    const row0 = data && data[0];
+    renderSuccess(row0 ? row0.queue_position : null);
+    showStep('stepSuccess');
+  } catch(e) {
+    alert(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ دڵنیام، زیادمبکە بۆ ڕیز';
+  }
+};
+
+function renderSuccess(position){
+  document.getElementById('positionText').textContent = (position !== null && position !== undefined)
+    ? `تۆ ژمارە ${position + 1} یت لە ڕیزی ${state.period}ی ${weekdayName(state.date)}`
+    : 'زیادکرایت بۆ ڕیز';
+  document.getElementById('successDetails').innerHTML =
+    (state.serviceName ? row('✂️','سێرڤس', esc(state.serviceName)) : '') +
+    row('📅','بەروار', weekdayName(state.date)+' — '+state.date) +
+    row('🕐','کات', state.period) +
+    row('🏪','شوێن', esc(barberInfo.shop_name));
+}
+document.getElementById('newJoinBtn').onclick = () => {
+  state = { name: state.name, phone: state.phone, serviceId:null, serviceName:'', weekday:null, weekOffset:0, date:null, period:null };
+  document.querySelectorAll('.svc-card,.wd-card,.pr-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
+  showStep('step2');
+};
+
+// ---------- PWA ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+init();
+</script>
+</body>
+</html>

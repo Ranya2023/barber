@@ -44,6 +44,22 @@
   .acc-delay { border-color: #E08A3C; }
   .acc-cancel { border-color: #8A7F72; }
   .acc-done { border-color: #22A55E; }
+
+  /* Next-up hero card: chasing LED border */
+  @property --led-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  .led-card { position: relative; border-radius: 1.25rem; }
+  .led-card::before {
+    content: ''; position: absolute; inset: -2px; border-radius: inherit; padding: 2px;
+    background: conic-gradient(from var(--led-angle), transparent 0%, #C9A356 8%, #F2D9A0 12%, #C9A356 16%, transparent 26%, transparent 74%, #C9A356 84%, #F2D9A0 88%, #C9A356 92%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: led-spin 3.5s linear infinite; pointer-events: none;
+  }
+  @keyframes led-spin { to { --led-angle: 360deg; } }
+
+  .listCard { border-radius: 1rem; background: #fff; border: 1px solid rgba(0,0,0,.08); padding: .9rem 1rem; }
+  .dark .listCard { background: #241E1A; border-color: rgba(255,255,255,.08); }
+  .listCard.doneCard { background: rgba(34,165,94,.08); border-color: rgba(34,165,94,.25); }
 </style>
 </head>
 <body class="min-h-screen bg-[#F7F3EC] dark:bg-inkbg text-[#1B1714] dark:text-[#F7F3EC] transition-colors">
@@ -200,6 +216,36 @@
       </div>
     </section>
 
+    <!-- ------------------ تابی ڕیز (بێ کات) ------------------ -->
+    <section id="tabQueue" class="tabpane hidden">
+      <div class="flex items-center justify-between mb-3">
+        <button id="qPrevDay" class="tap w-10 h-10 rounded-full bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-lg">›</button>
+        <div class="text-center">
+          <div id="qDateLabel" class="font-bold text-base"></div>
+          <button id="qTodayBtn" class="text-sm text-brass font-semibold">گەڕانەوە بۆ ئەمڕۆ</button>
+        </div>
+        <button id="qNextDay" class="tap w-10 h-10 rounded-full bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-lg">‹</button>
+      </div>
+
+      <div id="qOfflineBanner" class="hidden text-center mb-3">
+        <span class="inline-block bg-orange-500/15 text-orange-700 dark:text-orange-400 font-bold text-xs px-4 py-2 rounded-full">📡 ئینتەرنێت نییە — ئەمە دوایین لیستی هەڵگیراوە</span>
+      </div>
+
+      <div id="qNextCardWrap"></div>
+      <div id="qPeriodWait" class="flex flex-col gap-4"></div>
+      <div id="qDoneSection"></div>
+      <div id="qEmpty" class="hidden text-center py-14 text-base text-[#6b6259] dark:text-[#8A7F72]">هیچ کەسێک لە ڕیزدا نییە بۆ ئەم ڕۆژە 🪑</div>
+
+      <button id="addQueueBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl text-sm mt-5">+ زیادکردنی کڕیار (بێ کات)</button>
+
+      <div class="flex items-center justify-between mt-8 mb-3">
+        <h2 class="text-base font-extrabold">کڕیارە هەمیشەییەکان (بێ کات)</h2>
+        <button id="addQPermBtn" class="tap bg-brass text-inkbg font-bold px-3 py-2 rounded-lg text-xs">+ زیادکردن</button>
+      </div>
+      <div id="qPermList" class="flex flex-col gap-3"></div>
+      <div id="qPermEmpty" class="hidden text-center py-10 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
+    </section>
+
     <!-- ------------------ تابی هەمیشەیی ------------------ -->
     <section id="tabPerm" class="tabpane hidden">
       <div class="flex items-center justify-between mb-4">
@@ -223,12 +269,23 @@
     <section id="tabLink" class="tabpane hidden">
       <h2 class="text-lg font-extrabold mb-4">لینک و کۆدی QR</h2>
       <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-5 text-center mb-4">
+        <div class="text-sm font-bold text-brass mb-3">نۆرەی کاتدار</div>
         <img id="qrImg" class="mx-auto rounded-xl mb-4 w-48 h-48 bg-white p-2" />
-        <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-2">ئەم لینک/QR ـە بدە بە کڕیارەکانت بۆ گرتنی نۆرە</p>
+        <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-2">ئەم لینک/QR ـە بدە بە کڕیارەکانت بۆ گرتنی نۆرەی کاتدار</p>
         <div id="bookingLinkText" class="text-xs break-all bg-[#F7F3EC] dark:bg-inkbg rounded-lg p-3 mb-3" dir="ltr"></div>
         <div class="flex gap-2">
           <button id="copyLinkBtn" class="tap flex-1 bg-brass text-inkbg font-bold py-3 rounded-lg text-sm">کۆپیکردن</button>
           <button id="shareLinkBtn" class="tap flex-1 border border-brass text-brass font-bold py-3 rounded-lg text-sm">هاوبەشکردن</button>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-5 text-center mb-4">
+        <div class="text-sm font-bold text-brass mb-3">ڕیزی چاوەڕوانی (بێ کات)</div>
+        <img id="qQrImg" class="mx-auto rounded-xl mb-4 w-48 h-48 bg-white p-2" />
+        <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-2">ئەمە بۆ ئەوانەیە کە دەیانەوێت تەنها بەیانی/نیوەڕۆ/ئێوارە دیاری بکەن، بەبێ کاتێکی وردی دیاریکراو</p>
+        <div id="queueLinkText" class="text-xs break-all bg-[#F7F3EC] dark:bg-inkbg rounded-lg p-3 mb-3" dir="ltr"></div>
+        <div class="flex gap-2">
+          <button id="qCopyLinkBtn" class="tap flex-1 bg-brass text-inkbg font-bold py-3 rounded-lg text-sm">کۆپیکردن</button>
+          <button id="qShareLinkBtn" class="tap flex-1 border border-brass text-brass font-bold py-3 rounded-lg text-sm">هاوبەشکردن</button>
         </div>
       </div>
     </section>
@@ -270,8 +327,9 @@
 
   <!-- ------------------ تووڕی خوارەوە ------------------ -->
   <nav class="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-panel/95 backdrop-blur border-t border-black/10 dark:border-white/10" style="padding-bottom: env(safe-area-inset-bottom);">
-    <div class="max-w-md mx-auto grid grid-cols-5">
+    <div class="max-w-md mx-auto grid grid-cols-6">
       <button class="tabbtn active tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Home"><span class="text-lg">🏠</span><span class="text-[0.65rem] font-bold">سەرەکی</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+      <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Queue"><span class="text-lg">🪑</span><span class="text-[0.65rem] font-bold">ڕیز</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
       <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Perm"><span class="text-lg">🔁</span><span class="text-[0.65rem] font-bold">هەمیشەیی</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
       <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Services"><span class="text-lg">✂️</span><span class="text-[0.65rem] font-bold">سێرڤس</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
       <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Link"><span class="text-lg">🔗</span><span class="text-[0.65rem] font-bold">لینک</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
@@ -311,7 +369,7 @@ let blockedDatesCache = [];
 let dayBookings = [];
 let selectedDate = fmt(new Date());
 let activeTab = 'Home';
-let donePosition = localStorage.getItem('donePosition') || 'bottom';
+let doneExpanded = localStorage.getItem('doneExpanded') === '1';
 let pendingChain = [];
 
 // ---------- تیم ----------
@@ -580,12 +638,14 @@ async function startApp() {
   document.getElementById('appView').classList.remove('hidden');
   document.getElementById('hdrShopName').textContent = barberProfile.shop_name || barberProfile.name;
   setupBookingLink();
-  await Promise.all([loadServices(), loadPermClients(), loadWorkingHours(), loadBlockedDates()]);
+  await Promise.all([loadServices(), loadPermClients(), loadWorkingHours(), loadBlockedDates(), loadQueuePermClients()]);
   renderServices();
   renderPerm();
+  renderQueuePerm();
   renderHoursEditor();
   renderHolidays();
   await renderHome();
+  await renderQueue();
 }
 
 (async function boot() {
@@ -689,103 +749,585 @@ async function renderHome() {
   const doneList = dayBookings.filter(b => b.status === 'تەواوبوو');
 
   const waitingSection = document.createElement('div');
-  waitingSection.className = 'flex flex-col gap-3';
+  waitingSection.className = 'flex flex-col gap-2.5';
   waitList.forEach(b => waitingSection.appendChild(bookingCard(b)));
 
   const doneSection = document.createElement('div');
   if (doneList.length) {
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between mb-2 mt-4';
+    const header = document.createElement('button');
+    header.id = 'toggleDoneBtn';
+    header.className = 'tap w-full flex items-center justify-between mb-2 mt-5 px-1';
     header.innerHTML = `
-      <div class="text-sm font-bold text-[#6b6259] dark:text-[#8A7F72]">✅ تەواوبووەکان (${doneList.length})</div>
-      <button id="moveDoneBtn" class="tap text-xs font-bold px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5">${donePosition==='top' ? '🔽 بیبە بۆ خوارەوە' : '🔼 بیبە بۆ سەرەوە'}</button>`;
+      <span class="text-sm font-bold text-[#6b6259] dark:text-[#8A7F72]">✅ تەواوبووەکان (${doneList.length})</span>
+      <span class="text-xs font-bold text-brass">${doneExpanded ? 'شاردنەوە ▲' : 'پیشاندان ▼'}</span>`;
     doneSection.appendChild(header);
-    const list = document.createElement('div');
-    list.className = 'flex flex-col gap-3';
-    doneList.forEach(b => list.appendChild(bookingCard(b)));
-    doneSection.appendChild(list);
+    if (doneExpanded) {
+      const list = document.createElement('div');
+      list.className = 'flex flex-col gap-2.5';
+      doneList.forEach(b => list.appendChild(bookingCard(b)));
+      doneSection.appendChild(list);
+    }
   }
 
   const homeWaitWrap = document.getElementById('waitingSection');
   const homeDoneWrap = document.getElementById('doneSection');
   homeWaitWrap.innerHTML = ''; homeWaitWrap.appendChild(waitingSection);
   homeDoneWrap.innerHTML = ''; homeDoneWrap.appendChild(doneSection);
-  const captureArea = document.getElementById('captureArea');
-  if (donePosition === 'top') captureArea.insertBefore(homeDoneWrap, homeWaitWrap);
-  else captureArea.appendChild(homeDoneWrap);
 
-  const moveBtn = document.getElementById('moveDoneBtn');
-  if (moveBtn) moveBtn.onclick = () => { donePosition = donePosition === 'top' ? 'bottom' : 'top'; localStorage.setItem('donePosition', donePosition); renderHome(); };
+  const toggleBtn = document.getElementById('toggleDoneBtn');
+  if (toggleBtn) toggleBtn.onclick = () => { doneExpanded = !doneExpanded; localStorage.setItem('doneExpanded', doneExpanded ? '1' : '0'); renderHome(); };
 
   document.getElementById('dayEmpty').classList.toggle('hidden', dayBookings.length > 0);
 }
 
 function heroCard(b){
   const el = document.createElement('div');
-  el.className = 'rounded-2xl overflow-hidden mb-4 shadow-lg';
+  el.className = 'led-card mb-4';
   const phone = b.phone ? intlPhone(b.phone) : '';
+  const typeTag = b.type==='سەردانکەر' ? 'سەردانکەر' : b.type==='هەمیشەیی' ? 'هەمیشەیی' : 'کڕیار';
   el.innerHTML = `
-    <div class="pole-strip h-1.5"></div>
-    <div class="bg-inkbg text-[#F7F3EC] p-5">
-      <div class="text-xs text-brass font-bold mb-1.5 tracking-wide">⏭ نۆرەی داهاتوو</div>
-      <div class="flex items-end justify-between mb-3">
-        <div>
-          <div class="font-extrabold text-2xl">${esc(b.name)}</div>
-          <div class="text-sm text-[#c8c0b5] mt-0.5">${esc(b.service_name||'')}</div>
+    <div class="rounded-2xl overflow-hidden shadow-lg tap">
+      <div class="pole-strip h-1.5"></div>
+      <div class="bg-inkbg text-[#F7F3EC] p-5">
+        <div class="text-xs text-brass font-bold mb-1.5 tracking-wide">⏭ نۆرەی داهاتوو</div>
+        <div class="flex items-end justify-between mb-3">
+          <div class="min-w-0">
+            <div class="font-extrabold text-2xl truncate">${esc(b.name)}</div>
+            <div class="text-sm text-[#c8c0b5] mt-0.5 truncate">${esc(b.service_name||'')} · ${typeTag}</div>
+          </div>
+          <div class="text-3xl font-extrabold text-brass shrink-0" dir="ltr">${b.time}</div>
         </div>
-        <div class="text-3xl font-extrabold text-brass" dir="ltr">${b.time}</div>
+        ${phone ? `
+        <div class="grid grid-cols-4 gap-2">
+          <a href="tel:${phone}" onclick="event.stopPropagation()" class="tap text-center bg-white/10 rounded-lg py-2.5 text-lg">📞</a>
+          <a href="https://wa.me/${phone.replace('+','')}" target="_blank" onclick="event.stopPropagation()" class="tap text-center bg-[#25D366]/20 text-[#25D366] rounded-lg py-2.5 text-lg">💬</a>
+          <a href="https://t.me/+${phone.replace('+','')}" target="_blank" onclick="event.stopPropagation()" class="tap text-center bg-[#29A9EA]/20 text-[#29A9EA] rounded-lg py-2.5 text-lg">✈️</a>
+          <a href="viber://chat?number=${encodeURIComponent(phone)}" onclick="event.stopPropagation()" class="tap text-center bg-[#7360F2]/20 text-[#A79BFF] rounded-lg py-2.5 text-lg">💜</a>
+        </div>` : ''}
       </div>
-      ${phone ? `
-      <div class="flex gap-2">
-        <a href="tel:${phone}" class="tap flex-1 text-center bg-white/10 rounded-lg py-2.5 text-sm font-bold">📞</a>
-        <a href="https://wa.me/${phone.replace('+','')}" target="_blank" class="tap flex-1 text-center bg-[#25D366]/20 text-[#25D366] rounded-lg py-2.5 text-sm font-bold">💬</a>
-        <a href="viber://chat?number=${encodeURIComponent(phone)}" class="tap flex-1 text-center bg-[#7360F2]/20 text-[#A79BFF] rounded-lg py-2.5 text-sm font-bold">💜</a>
-      </div>` : ''}
     </div>`;
+  el.onclick = () => openBookingDetail(b);
   return el;
 }
 
 function bookingCard(b) {
   const el = document.createElement('div');
-  el.className = `card-acc ${STATUS_ACC[b.status]||''} rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 shadow-sm`;
-  const phone = b.phone ? intlPhone(b.phone) : '';
-  const statusCls = STATUS_STYLE[b.status] || STATUS_STYLE['چاوەڕوان'];
+  const isDone = b.status === 'تەواوبوو';
+  el.className = `listCard tap ${isDone ? 'doneCard' : ''}`;
+  const typeTag = b.type==='سەردانکەر' ? ' · سەردانکەر' : b.type==='هەمیشەیی' ? ' · هەمیشەیی' : '';
   el.innerHTML = `
-    <div class="flex items-start justify-between mb-2">
-      <div>
-        <div class="font-bold text-base ${b.status==='هەڵوەشاوە'?'line-through opacity-60':''}">${esc(b.name)}</div>
-        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${esc(b.service_name||'')} ${b.type==='سەردانکەر'?'· سەردانکەر':b.type==='هەمیشەیی'?'· هەمیشەیی':''}</div>
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="font-bold text-base truncate ${isDone?'line-through opacity-70':''}">${esc(b.name)}</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] truncate mt-0.5">${esc(b.service_name||'')}${typeTag}</div>
       </div>
-      <div class="text-left">
-        <div class="font-extrabold text-lg" dir="ltr">${b.time}</div>
-        <span class="inline-block mt-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${statusCls}">${b.status}</span>
-      </div>
-    </div>
-    ${phone ? `
-    <div class="flex gap-2 mb-2">
-      <a href="tel:${phone}" class="tap flex-1 text-center bg-[#F7F3EC] dark:bg-inkbg rounded-lg py-2 text-xs font-bold border border-black/10 dark:border-white/10">📞 پەیوەندی</a>
-      <a href="https://wa.me/${phone.replace('+','')}" target="_blank" class="tap flex-1 text-center bg-[#25D366]/10 text-[#128C4A] dark:text-[#25D366] rounded-lg py-2 text-xs font-bold border border-[#25D366]/30">💬 واتساپ</a>
-      <a href="viber://chat?number=${encodeURIComponent(phone)}" class="tap flex-1 text-center bg-[#7360F2]/10 text-[#7360F2] dark:text-[#A79BFF] rounded-lg py-2 text-xs font-bold border border-[#7360F2]/30">💜 ڤایبەر</a>
-    </div>` : ''}
-    <div class="flex flex-wrap gap-1.5 status-actions"></div>
-  `;
-  const actions = el.querySelector('.status-actions');
-  const mkBtn = (label, cls, fn) => { const btn=document.createElement('button'); btn.className='tap text-xs font-bold px-2.5 py-1.5 rounded-lg '+cls; btn.textContent=label; btn.onclick=fn; return btn; };
-
-  if (b.status === 'چاوەڕوان') {
-    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => setStatus(b.id,'تەواوبوو')));
-    actions.appendChild(mkBtn('⏸ دواخستن', 'bg-orange-500/15 text-orange-700 dark:text-orange-400', () => setStatus(b.id,'دواخراوە')));
-    actions.appendChild(mkBtn('📅 گۆڕینی کات', 'bg-brass/15 text-brass', () => openReschedule(b)));
-    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => setStatus(b.id,'هەڵوەشاوە')));
-  } else if (b.status === 'دواخراوە') {
-    actions.appendChild(mkBtn('📅 دیاریکردنی کاتی نوێ', 'bg-brass/15 text-brass', () => openReschedule(b)));
-    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => setStatus(b.id,'هەڵوەشاوە')));
-  } else if (b.status === 'تەواوبوو') {
-    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => setStatus(b.id,'چاوەڕوان')));
-  } else {
-    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => setStatus(b.id,'چاوەڕوان')));
-  }
+      <div class="font-extrabold text-lg shrink-0" dir="ltr">${b.time}</div>
+    </div>`;
+  el.onclick = () => openBookingDetail(b);
   return el;
+}
+
+function openBookingDetail(b) {
+  const phone = b.phone ? intlPhone(b.phone) : '';
+  const typeLabel = b.type==='سەردانکەر' ? 'سەردانکەر' : b.type==='هەمیشەیی' ? 'هەمیشەیی' : 'کڕیار';
+  openModal(`
+    <div class="flex items-start justify-between mb-1 gap-2">
+      <h3 class="text-xl font-extrabold">${esc(b.name)}</h3>
+      <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[b.status]||''}">${b.status}</span>
+    </div>
+    <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">${esc(b.service_name||'')} · ${typeLabel}${phone?' · '+phone:''}</div>
+
+    <div class="flex items-center justify-between bg-[#F7F3EC] dark:bg-inkbg rounded-xl px-3 py-3 mb-4">
+      <button id="dTimeBack" class="tap text-sm font-bold px-3 py-2 rounded-lg bg-white dark:bg-panel border border-black/10 dark:border-white/10">◀ زووتر</button>
+      <div class="text-center">
+        <div class="text-[0.65rem] font-bold text-[#6b6259] dark:text-[#8A7F72]">کاتژمێر</div>
+        <div class="font-extrabold text-2xl" dir="ltr">${b.time}</div>
+      </div>
+      <button id="dTimeFwd" class="tap text-sm font-bold px-3 py-2 rounded-lg bg-white dark:bg-panel border border-black/10 dark:border-white/10">دواتر ▶</button>
+    </div>
+
+    ${phone ? `<div class="grid grid-cols-4 gap-2 mb-4">
+      <a href="tel:${phone}" class="tap text-center bg-[#F7F3EC] dark:bg-inkbg rounded-xl py-3 text-xl border border-black/10 dark:border-white/10">📞</a>
+      <a href="https://wa.me/${phone.replace('+','')}" target="_blank" class="tap text-center bg-[#25D366]/10 rounded-xl py-3 text-xl border border-[#25D366]/30">💬</a>
+      <a href="https://t.me/+${phone.replace('+','')}" target="_blank" class="tap text-center bg-[#29A9EA]/10 rounded-xl py-3 text-xl border border-[#29A9EA]/30">✈️</a>
+      <a href="viber://chat?number=${encodeURIComponent(phone)}" class="tap text-center bg-[#7360F2]/10 rounded-xl py-3 text-xl border border-[#7360F2]/30">💜</a>
+    </div>` : ''}
+
+    <div id="dActions" class="flex flex-wrap gap-2 mb-2"></div>
+    <button id="dFullReschedule" class="tap w-full text-sm font-bold text-[#6b6259] dark:text-[#8A7F72] py-2.5">📅 دیاریکردنی بەروار/کاتی دیکە بە دەست</button>
+  `);
+
+  document.getElementById('dTimeBack').onclick = () => shiftTime(b, -15);
+  document.getElementById('dTimeFwd').onclick = () => shiftTime(b, 15);
+  document.getElementById('dFullReschedule').onclick = () => openReschedule(b);
+
+  const actions = document.getElementById('dActions');
+  const mkBtn = (label, cls, fn) => { const btn=document.createElement('button'); btn.className='tap flex-1 text-sm font-bold px-3 py-2.5 rounded-xl '+cls; btn.textContent=label; btn.onclick=fn; return btn; };
+  if (b.status === 'چاوەڕوان') {
+    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => { setStatus(b.id,'تەواوبوو'); closeModal(); }));
+    actions.appendChild(mkBtn('⏸ دواخستن', 'bg-orange-500/15 text-orange-700 dark:text-orange-400', () => { setStatus(b.id,'دواخراوە'); closeModal(); }));
+    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => { setStatus(b.id,'هەڵوەشاوە'); closeModal(); }));
+  } else if (b.status === 'دواخراوە') {
+    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => { setStatus(b.id,'تەواوبوو'); closeModal(); }));
+    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => { setStatus(b.id,'هەڵوەشاوە'); closeModal(); }));
+  } else {
+    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => { setStatus(b.id,'چاوەڕوان'); closeModal(); }));
+  }
+}
+
+async function shiftTime(b, deltaMin) {
+  const newMin = Math.max(0, Math.min(23*60+59, toMin(b.time) + deltaMin));
+  const hh = String(Math.floor(newMin/60)).padStart(2,'0');
+  const mm = String(newMin%60).padStart(2,'0');
+  const newTime = `${hh}:${mm}`;
+  try {
+    const { error } = await sb.from('bookings').update({ time: newTime }).eq('id', b.id);
+    if (error) throw error;
+    b.time = newTime;
+    renderHome();
+    openBookingDetail(b);
+  } catch(e) {
+    toast(e.message || 'ئینتەرنێت نییە', true);
+  }
+}
+
+// =====================================================================
+//  تابی ڕیز — ڕیزی چاوەڕوانی بێ کات (بەیانی/نیوەڕۆ/ئێوارە، بەبێ کاتژمێر)
+// =====================================================================
+let selectedQueueDate = fmt(new Date());
+let queueEntries = [];
+let queuePermCache = [];
+let queueDoneExpanded = localStorage.getItem('queueDoneExpanded') === '1';
+const PERIODS = [
+  { key:'بەیانی', icon:'🌅', bg:'bg-amber-500/10', border:'border-amber-500/25', text:'text-amber-700 dark:text-amber-400' },
+  { key:'نیوەڕۆ', icon:'☀️', bg:'bg-sky-500/10', border:'border-sky-500/25', text:'text-sky-700 dark:text-sky-400' },
+  { key:'ئێوارە', icon:'🌆', bg:'bg-purple-500/10', border:'border-purple-500/25', text:'text-purple-700 dark:text-purple-400' }
+];
+
+async function loadQueuePermClients(){
+  const { data, error } = await sb.from('permanent_queue_clients').select('*').eq('barber_id', barberProfile.id).order('weekday');
+  if (!error) queuePermCache = data || [];
+}
+
+async function nextQueuePosition(date, period){
+  const { data } = await sb.from('queue_entries').select('position')
+    .eq('barber_id', barberProfile.id).eq('date', date).eq('period', period)
+    .order('position', { ascending:false }).limit(1);
+  return data && data.length ? data[0].position + 1 : 0;
+}
+
+async function ensureQueuePermanentOccurrences(date){
+  const weekday = weekdayOf(date);
+  const matches = queuePermCache.filter(p => p.weekday === weekday);
+  for (const p of matches) {
+    const nextPos = await nextQueuePosition(date, p.period);
+    await sb.from('queue_entries').upsert([{
+      barber_id: barberProfile.id, permanent_queue_client_id: p.id, name: p.name, phone: p.phone,
+      date, period: p.period, position: nextPos, service_chain: p.service_chain,
+      service_name: chainLabel(p.service_chain), status: 'چاوەڕوان', type: 'هەمیشەیی'
+    }], { onConflict: 'barber_id,permanent_queue_client_id,date', ignoreDuplicates: true });
+  }
+}
+
+function shiftQueueDate(days) {
+  const d = new Date(selectedQueueDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  selectedQueueDate = fmt(d);
+  renderQueue();
+}
+document.getElementById('qPrevDay').onclick = () => shiftQueueDate(-1);
+document.getElementById('qNextDay').onclick = () => shiftQueueDate(1);
+document.getElementById('qTodayBtn').onclick = () => { selectedQueueDate = fmt(new Date()); renderQueue(); };
+
+async function renderQueue() {
+  if (!barberProfile) return;
+  const d = new Date(selectedQueueDate + 'T00:00:00');
+  document.getElementById('qDateLabel').textContent = `${WEEKDAY_LABELS[d.getDay()]} — ${selectedQueueDate}`;
+
+  const cacheKey = 'queueCache_' + barberProfile.id + '_' + selectedQueueDate;
+  let offline = false;
+  try {
+    await ensureQueuePermanentOccurrences(selectedQueueDate);
+    const { data, error } = await sb.from('queue_entries').select('*')
+      .eq('barber_id', barberProfile.id).eq('date', selectedQueueDate).order('position', { ascending:true });
+    if (error) throw error;
+    queueEntries = data || [];
+    try { localStorage.setItem(cacheKey, JSON.stringify(queueEntries)); } catch(e) {}
+  } catch (e) {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) { try { queueEntries = JSON.parse(cached); offline = true; } catch(e2) { queueEntries = []; } }
+    else queueEntries = [];
+  }
+  document.getElementById('qOfflineBanner').classList.toggle('hidden', !offline);
+
+  const active = queueEntries.filter(q => q.status === 'چاوەڕوان' || q.status === 'دواخراوە');
+  const doneList = queueEntries.filter(q => q.status === 'تەواوبوو');
+
+  const isToday = selectedQueueDate === fmt(new Date());
+  const nextWrap = document.getElementById('qNextCardWrap');
+  nextWrap.innerHTML = '';
+  if (isToday) {
+    const next = active.filter(q => q.status === 'چاوەڕوان')
+      .sort((a,b) => PERIODS.findIndex(p=>p.key===a.period) - PERIODS.findIndex(p=>p.key===b.period) || a.position - b.position)[0];
+    if (next) nextWrap.appendChild(queueHeroCard(next));
+  }
+
+  const periodWrap = document.getElementById('qPeriodWait');
+  periodWrap.innerHTML = '';
+  PERIODS.forEach(per => {
+    const list = active.filter(q => q.period === per.key).sort((a,b) => a.position - b.position);
+    if (!list.length) return;
+    const section = document.createElement('div');
+    section.className = `rounded-2xl ${per.bg} border ${per.border} p-3`;
+    const header = document.createElement('div');
+    header.className = `flex items-center gap-2 mb-2 text-sm font-extrabold ${per.text}`;
+    header.innerHTML = `<span>${per.icon} ${per.key}</span><span class="text-xs font-bold opacity-70">(${list.length})</span>`;
+    section.appendChild(header);
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className = 'flex flex-col gap-2';
+    list.forEach((q,idx) => cardsWrap.appendChild(queueCard(q, list, idx)));
+    section.appendChild(cardsWrap);
+    periodWrap.appendChild(section);
+  });
+
+  const doneWrap = document.getElementById('qDoneSection');
+  doneWrap.innerHTML = '';
+  if (doneList.length) {
+    const header = document.createElement('button');
+    header.id = 'qToggleDoneBtn';
+    header.className = 'tap w-full flex items-center justify-between mb-2 mt-5 px-1';
+    header.innerHTML = `
+      <span class="text-sm font-bold text-[#6b6259] dark:text-[#8A7F72]">✅ تەواوبووەکان (${doneList.length})</span>
+      <span class="text-xs font-bold text-brass">${queueDoneExpanded ? 'شاردنەوە ▲' : 'پیشاندان ▼'}</span>`;
+    doneWrap.appendChild(header);
+    if (queueDoneExpanded) {
+      const list = document.createElement('div');
+      list.className = 'flex flex-col gap-2';
+      doneList.forEach((q,idx) => list.appendChild(queueCard(q, doneList, idx)));
+      doneWrap.appendChild(list);
+    }
+    document.getElementById('qToggleDoneBtn').onclick = () => { queueDoneExpanded = !queueDoneExpanded; localStorage.setItem('queueDoneExpanded', queueDoneExpanded?'1':'0'); renderQueue(); };
+  }
+
+  document.getElementById('qEmpty').classList.toggle('hidden', queueEntries.length > 0);
+}
+
+function queueHeroCard(q) {
+  const el = document.createElement('div');
+  el.className = 'led-card mb-4';
+  const phone = q.phone ? intlPhone(q.phone) : '';
+  const per = PERIODS.find(p=>p.key===q.period);
+  const typeTag = q.type==='هەمیشەیی' ? 'هەمیشەیی' : 'کڕیار';
+  el.innerHTML = `
+    <div class="rounded-2xl overflow-hidden shadow-lg tap">
+      <div class="pole-strip h-1.5"></div>
+      <div class="bg-inkbg text-[#F7F3EC] p-5">
+        <div class="text-xs text-brass font-bold mb-1.5 tracking-wide">⏭ دواتر لە ڕیزدا</div>
+        <div class="flex items-end justify-between mb-3">
+          <div class="min-w-0">
+            <div class="font-extrabold text-2xl truncate">${esc(q.name)}</div>
+            <div class="text-sm text-[#c8c0b5] mt-0.5 truncate">${esc(q.service_name||'')} · ${typeTag}</div>
+          </div>
+          <div class="text-xl font-extrabold text-brass shrink-0">${per?per.icon:''} ${q.period}</div>
+        </div>
+        ${phone ? `
+        <div class="grid grid-cols-4 gap-2">
+          <a href="tel:${phone}" onclick="event.stopPropagation()" class="tap text-center bg-white/10 rounded-lg py-2.5 text-lg">📞</a>
+          <a href="https://wa.me/${phone.replace('+','')}" target="_blank" onclick="event.stopPropagation()" class="tap text-center bg-[#25D366]/20 text-[#25D366] rounded-lg py-2.5 text-lg">💬</a>
+          <a href="https://t.me/+${phone.replace('+','')}" target="_blank" onclick="event.stopPropagation()" class="tap text-center bg-[#29A9EA]/20 text-[#29A9EA] rounded-lg py-2.5 text-lg">✈️</a>
+          <a href="viber://chat?number=${encodeURIComponent(phone)}" onclick="event.stopPropagation()" class="tap text-center bg-[#7360F2]/20 text-[#A79BFF] rounded-lg py-2.5 text-lg">💜</a>
+        </div>` : ''}
+      </div>
+    </div>`;
+  el.onclick = () => openQueueDetail(q);
+  return el;
+}
+
+function queueCard(q, periodList, idx) {
+  const el = document.createElement('div');
+  const isDone = q.status === 'تەواوبوو';
+  el.className = `listCard ${isDone ? 'doneCard' : ''}`;
+  const typeTag = q.type==='هەمیشەیی' ? ' · هەمیشەیی' : '';
+  const delayedTag = q.status==='دواخراوە' ? '<div class="text-[0.65rem] font-bold text-orange-600 dark:text-orange-400 mt-0.5">⏸ دواخراوە</div>' : '';
+  const reorderBtns = !isDone ? `
+    <div class="flex flex-col gap-1 shrink-0">
+      <button class="qUp tap w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 text-sm ${idx===0?'opacity-30 pointer-events-none':''}">▲</button>
+      <button class="qDown tap w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 text-sm ${idx===periodList.length-1?'opacity-30 pointer-events-none':''}">▼</button>
+    </div>` : '';
+  el.innerHTML = `
+    <div class="flex items-center gap-3">
+      ${reorderBtns}
+      <div class="min-w-0 flex-1 qBody">
+        <div class="font-bold text-base truncate ${isDone?'line-through opacity-70':''}">${idx+1}. ${esc(q.name)}</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] truncate mt-0.5">${esc(q.service_name||'')}${typeTag}</div>
+        ${delayedTag}
+      </div>
+    </div>`;
+  if (!isDone) {
+    el.querySelector('.qUp').onclick = (e) => { e.stopPropagation(); moveQueueEntry(periodList, idx, -1); };
+    el.querySelector('.qDown').onclick = (e) => { e.stopPropagation(); moveQueueEntry(periodList, idx, 1); };
+  }
+  el.querySelector('.qBody').onclick = () => openQueueDetail(q);
+  return el;
+}
+
+async function moveQueueEntry(list, idx, dir) {
+  const other = idx + dir;
+  if (other < 0 || other >= list.length) return;
+  const a = list[idx], b = list[other];
+  try {
+    await Promise.all([
+      sb.from('queue_entries').update({ position: b.position }).eq('id', a.id),
+      sb.from('queue_entries').update({ position: a.position }).eq('id', b.id)
+    ]);
+    renderQueue();
+  } catch(e) {
+    toast('ئینتەرنێت نییە', true);
+  }
+}
+
+function openQueueDetail(q) {
+  const phone = q.phone ? intlPhone(q.phone) : '';
+  const typeLabel = q.type==='هەمیشەیی' ? 'هەمیشەیی' : 'کڕیار';
+  openModal(`
+    <div class="flex items-start justify-between mb-1 gap-2">
+      <h3 class="text-xl font-extrabold">${esc(q.name)}</h3>
+      <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[q.status]||''}">${q.status}</span>
+    </div>
+    <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">${esc(q.service_name||'')} · ${typeLabel}${phone?' · '+phone:''}</div>
+
+    <div class="flex items-center justify-center gap-2 bg-[#F7F3EC] dark:bg-inkbg rounded-xl px-3 py-3 mb-4">
+      <span class="text-sm font-semibold">کات:</span>
+      <select id="qPeriodSel" class="rounded-lg px-3 py-2 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-sm font-bold">
+        ${PERIODS.map(p=>`<option value="${p.key}" ${p.key===q.period?'selected':''}>${p.icon} ${p.key}</option>`).join('')}
+      </select>
+    </div>
+
+    ${phone ? `<div class="grid grid-cols-4 gap-2 mb-4">
+      <a href="tel:${phone}" class="tap text-center bg-[#F7F3EC] dark:bg-inkbg rounded-xl py-3 text-xl border border-black/10 dark:border-white/10">📞</a>
+      <a href="https://wa.me/${phone.replace('+','')}" target="_blank" class="tap text-center bg-[#25D366]/10 rounded-xl py-3 text-xl border border-[#25D366]/30">💬</a>
+      <a href="https://t.me/+${phone.replace('+','')}" target="_blank" class="tap text-center bg-[#29A9EA]/10 rounded-xl py-3 text-xl border border-[#29A9EA]/30">✈️</a>
+      <a href="viber://chat?number=${encodeURIComponent(phone)}" class="tap text-center bg-[#7360F2]/10 rounded-xl py-3 text-xl border border-[#7360F2]/30">💜</a>
+    </div>` : ''}
+
+    <div id="qActions" class="flex flex-wrap gap-2 mb-2"></div>
+  `);
+
+  document.getElementById('qPeriodSel').onchange = async (e) => {
+    const newPeriod = e.target.value;
+    try {
+      const nextPos = await nextQueuePosition(q.date, newPeriod);
+      const { error } = await sb.from('queue_entries').update({ period: newPeriod, position: nextPos }).eq('id', q.id);
+      if (error) throw error;
+      toast('گۆڕدرا ✓');
+      closeModal();
+      renderQueue();
+    } catch(err) { toast(err.message || 'ئینتەرنێت نییە', true); }
+  };
+
+  const actions = document.getElementById('qActions');
+  const mkBtn = (label, cls, fn) => { const btn=document.createElement('button'); btn.className='tap flex-1 text-sm font-bold px-3 py-2.5 rounded-xl '+cls; btn.textContent=label; btn.onclick=fn; return btn; };
+  if (q.status === 'چاوەڕوان') {
+    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => { setQueueStatus(q,'تەواوبوو'); closeModal(); }));
+    actions.appendChild(mkBtn('⏸ دواخستن (بۆ کۆتایی)', 'bg-orange-500/15 text-orange-700 dark:text-orange-400', () => { setQueueStatus(q,'دواخراوە'); closeModal(); }));
+    actions.appendChild(mkBtn('✕ سڕینەوە', 'bg-barberred/10 text-barberred', () => deleteQueueEntry(q)));
+  } else if (q.status === 'دواخراوە') {
+    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => { setQueueStatus(q,'تەواوبوو'); closeModal(); }));
+    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => { setQueueStatus(q,'چاوەڕوان'); closeModal(); }));
+    actions.appendChild(mkBtn('✕ سڕینەوە', 'bg-barberred/10 text-barberred', () => deleteQueueEntry(q)));
+  } else {
+    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => { setQueueStatus(q,'چاوەڕوان'); closeModal(); }));
+    actions.appendChild(mkBtn('✕ سڕینەوە', 'bg-barberred/10 text-barberred', () => deleteQueueEntry(q)));
+  }
+}
+
+async function setQueueStatus(q, status) {
+  try {
+    const update = { status };
+    if (status === 'دواخراوە') update.position = await nextQueuePosition(q.date, q.period);
+    const { error } = await sb.from('queue_entries').update(update).eq('id', q.id);
+    if (error) throw error;
+    toast('نوێکرایەوە ✓');
+    renderQueue();
+  } catch(e) {
+    toast(e.message || 'ئینتەرنێت نییە', true);
+  }
+}
+async function deleteQueueEntry(q) {
+  if (!confirm('ئەم کەسە لە ڕیز بسڕدرێتەوە؟')) return;
+  const { error } = await sb.from('queue_entries').delete().eq('id', q.id);
+  if (error) return toast(error.message, true);
+  closeModal();
+  toast('سڕایەوە ✓');
+  renderQueue();
+}
+
+document.getElementById('addQueueBtn').onclick = () => {
+  const svcOptions = '<option value="">— هیچ —</option>' + servicesCache.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">زیادکردنی کڕیار بۆ ڕیز</h3>
+    <label class="block text-sm font-semibold mb-1.5">ناو</label>
+    <div class="relative mb-3">
+      <input id="qmName" type="text" autocomplete="off" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+      <div id="qmNameSuggest" class="hidden absolute z-20 top-full mt-1 w-full bg-white dark:bg-panel border border-black/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto"></div>
+    </div>
+    <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل (ئارەزوومەندانە)</label>
+    <input id="qmPhone" type="tel" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <label class="block text-sm font-semibold mb-1.5">کات</label>
+    <select id="qmPeriod" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+      ${PERIODS.map(p=>`<option value="${p.key}">${p.icon} ${p.key}</option>`).join('')}
+    </select>
+    <label class="block text-sm font-semibold mb-1.5">سێرڤس</label>
+    <select id="qmSvc" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10">${svcOptions}</select>
+    <button id="qmSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">زیادکردن</button>
+  `);
+
+  const nameInput = document.getElementById('qmName');
+  const suggestBox = document.getElementById('qmNameSuggest');
+  let suggestTimer = null;
+  const fillFromCustomer = (c) => {
+    nameInput.value = c.name;
+    document.getElementById('qmPhone').value = c.phone || '';
+    suggestBox.classList.add('hidden'); suggestBox.innerHTML = '';
+  };
+  nameInput.addEventListener('input', () => {
+    clearTimeout(suggestTimer);
+    const qv = nameInput.value.trim();
+    if (!qv) { suggestBox.classList.add('hidden'); suggestBox.innerHTML=''; return; }
+    suggestTimer = setTimeout(async () => {
+      try {
+        const [{ data: fromQ }, { data: fromB }, { data: fromPerm }] = await Promise.all([
+          sb.from('queue_entries').select('name,phone,created_at').eq('barber_id', barberProfile.id).ilike('name', qv+'%').order('created_at',{ascending:false}).limit(10),
+          sb.from('bookings').select('name,phone,created_at').eq('barber_id', barberProfile.id).ilike('name', qv+'%').order('created_at',{ascending:false}).limit(10),
+          sb.from('permanent_clients').select('name,phone').eq('barber_id', barberProfile.id).ilike('name', qv+'%').limit(10)
+        ]);
+        const seen = new Set(); const results = [];
+        [...(fromPerm||[]), ...(fromQ||[]), ...(fromB||[])].forEach(c => {
+          const key = c.name+'|'+(c.phone||'');
+          if (!seen.has(key)) { seen.add(key); results.push(c); }
+        });
+        if (!results.length) { suggestBox.classList.add('hidden'); suggestBox.innerHTML=''; return; }
+        suggestBox.innerHTML = results.slice(0,6).map((c,i) => `
+          <button type="button" data-i="${i}" class="tap w-full text-right px-4 py-2.5 border-b last:border-0 border-black/5 dark:border-white/5">
+            <div class="font-bold text-sm">${esc(c.name)}</div>
+            ${c.phone ? `<div class="text-xs text-[#6b6259] dark:text-[#8A7F72]" dir="ltr">${esc(c.phone)}</div>` : ''}
+          </button>`).join('');
+        suggestBox.classList.remove('hidden');
+        suggestBox.querySelectorAll('button[data-i]').forEach(btn => { btn.onclick = () => fillFromCustomer(results[Number(btn.dataset.i)]); });
+      } catch(e) {}
+    }, 250);
+  });
+  nameInput.addEventListener('blur', () => setTimeout(()=>suggestBox.classList.add('hidden'), 150));
+
+  document.getElementById('qmSave').onclick = async () => {
+    const name = document.getElementById('qmName').value.trim();
+    const phone = document.getElementById('qmPhone').value.trim();
+    const period = document.getElementById('qmPeriod').value;
+    const serviceId = document.getElementById('qmSvc').value;
+    if (!name) return toast('تکایە ناو بنووسە', true);
+    const svc = servicesCache.find(s=>s.id===serviceId);
+    try {
+      const nextPos = await nextQueuePosition(selectedQueueDate, period);
+      const { error } = await sb.from('queue_entries').insert({
+        barber_id: barberProfile.id, name, phone, service_id: serviceId || null, service_name: svc?svc.name:'',
+        date: selectedQueueDate, period, position: nextPos, status:'چاوەڕوان', type:'کڕیار'
+      });
+      if (error) throw error;
+      toast('زیادکرا ✓');
+      closeModal();
+      renderQueue();
+    } catch(e) { toast(e.message || 'ئینتەرنێت نییە', true); }
+  };
+};
+
+function renderQueuePerm() {
+  const list = document.getElementById('qPermList');
+  list.innerHTML = '';
+  document.getElementById('qPermEmpty').classList.toggle('hidden', queuePermCache.length > 0);
+  queuePermCache.forEach(p => {
+    const chain = (p.service_chain||[]).map((id,i)=>`${i+1}. ${esc(svcName(id))}`);
+    const per = PERIODS.find(x=>x.key===p.period);
+    const el = document.createElement('div');
+    el.className = 'rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4';
+    el.innerHTML = `
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-bold text-base">${esc(p.name)}</div>
+          <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${WEEKDAY_LABELS[p.weekday]} — ${per?per.icon:''} ${p.period}</div>
+        </div>
+        <div class="flex gap-1.5">
+          <button class="tap text-sm px-2.5 py-1.5 rounded-lg bg-brass/15 text-brass font-bold editQP">✎</button>
+          <button class="tap text-sm px-2.5 py-1.5 rounded-lg bg-barberred/10 text-barberred font-bold delQP">✕</button>
+        </div>
+      </div>
+      <div class="text-sm text-[#6b6259] dark:text-[#8A7F72]">🔁 زنجیرە: ${chain.join(' → ') || '—'}</div>
+    `;
+    el.querySelector('.editQP').onclick = () => openQueuePermForm(p);
+    el.querySelector('.delQP').onclick = async () => {
+      if (!confirm('سڕینەوەی ئەم کڕیارە هەمیشەییە؟')) return;
+      const { error } = await sb.from('permanent_queue_clients').delete().eq('id', p.id);
+      if (error) return toast(error.message, true);
+      toast('سڕایەوە ✓');
+      await loadQueuePermClients();
+      renderQueuePerm();
+    };
+    list.appendChild(el);
+  });
+}
+
+document.getElementById('addQPermBtn').onclick = () => openQueuePermForm(null);
+
+function openQueuePermForm(p) {
+  pendingChain = p ? [...(p.service_chain||[])] : [];
+  const svcChips = servicesCache.map(s => `<button type="button" data-id="${s.id}" class="tap chipBtn text-sm font-bold px-3 py-2 rounded-lg bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10">+ ${esc(s.name)}</button>`).join('');
+  const wdOptions = WEEKDAY_LABELS.map((w,i)=>`<option value="${i}" ${p&&p.weekday==i?'selected':''}>${w}</option>`).join('');
+  const perOptions = PERIODS.map(x=>`<option value="${x.key}" ${p&&p.period===x.key?'selected':''}>${x.icon} ${x.key}</option>`).join('');
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">${p?'دەستکاریکردنی':'زیادکردنی'} کڕیاری هەمیشەیی (بێ کات)</h3>
+    <label class="block text-sm font-semibold mb-1.5">ناو</label>
+    <input id="qmName2" type="text" value="${p?esc(p.name):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل</label>
+    <input id="qmPhone2" type="tel" dir="ltr" value="${p?esc(p.phone||''):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <label class="block text-sm font-semibold mb-1.5">ڕۆژی هەفتە</label>
+    <select id="qmWeekday2" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">${wdOptions}</select>
+    <label class="block text-sm font-semibold mb-1.5">کات</label>
+    <select id="qmPeriod2" class="w-full rounded-xl px-4 py-3 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10">${perOptions}</select>
+    <label class="block text-sm font-semibold mb-1.5">زنجیرەی سێرڤس — دەتوانیت هەمان سێرڤس چەند جارێک زیاد بکەیت</label>
+    <div class="flex flex-wrap gap-2 mb-3">${svcChips}</div>
+    <div id="qChainPreview2" class="flex flex-wrap gap-1.5 mb-5 min-h-[1.6rem]"></div>
+    <button id="qmSave2" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
+  `);
+  function renderChain() {
+    const wrap = document.getElementById('qChainPreview2');
+    if (!pendingChain.length) { wrap.innerHTML = '<span class="text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ زنجیرەیەک نەبژێردراوە</span>'; return; }
+    wrap.innerHTML = pendingChain.map((id,i)=>`
+      <span class="chainItem inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg bg-brass/15 text-brass" data-idx="${i}">
+        ${i+1}. ${esc(svcName(id))} <button type="button" class="rmChain2 font-extrabold px-1" data-idx="${i}">✕</button>
+      </span>`).join('');
+    wrap.querySelectorAll('.rmChain2').forEach(btn=>{
+      btn.onclick = () => { pendingChain.splice(Number(btn.dataset.idx),1); renderChain(); };
+    });
+  }
+  renderChain();
+  document.querySelectorAll('.chipBtn').forEach(btn=>{
+    btn.onclick = () => { pendingChain.push(btn.dataset.id); renderChain(); };
+  });
+  document.getElementById('qmSave2').onclick = async () => {
+    const name = document.getElementById('qmName2').value.trim();
+    const phone = document.getElementById('qmPhone2').value.trim();
+    const weekday = Number(document.getElementById('qmWeekday2').value);
+    const period = document.getElementById('qmPeriod2').value;
+    if (!name || !phone || !pendingChain.length) return toast('تکایە هەموو خانەکان و زنجیرەی سێرڤس پڕبکەرەوە', true);
+    const row = { barber_id: barberProfile.id, name, phone, weekday, period, service_chain: pendingChain };
+    const { error } = p
+      ? await sb.from('permanent_queue_clients').update(row).eq('id', p.id)
+      : await sb.from('permanent_queue_clients').insert(row);
+    if (error) return toast(error.message, true);
+    toast('پاشەکەوتکرا ✓');
+    closeModal();
+    await loadQueuePermClients();
+    renderQueuePerm();
+  };
 }
 
 async function setStatus(bookingId, status) {
@@ -1093,6 +1635,18 @@ function setupBookingLink() {
   };
   document.getElementById('shareLinkBtn').onclick = async () => {
     if (navigator.share) { try { await navigator.share({ title: barberProfile.shop_name, url: link }); } catch(e) {} }
+    else { toast('هاوبەشکردن لەم وێبگەڕەدا پشتگیری نەکراوە، کۆپی بکە'); }
+  };
+
+  const qLink = new URL('./queue.html', location.href).toString() + '?b=' + encodeURIComponent(barberProfile.id);
+  document.getElementById('queueLinkText').textContent = qLink;
+  document.getElementById('qQrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=' + encodeURIComponent(qLink);
+  document.getElementById('qCopyLinkBtn').onclick = async () => {
+    try { await navigator.clipboard.writeText(qLink); toast('لینک کۆپیکرا ✓'); }
+    catch(e) { toast('نەتوانرا کۆپی بکرێت', true); }
+  };
+  document.getElementById('qShareLinkBtn').onclick = async () => {
+    if (navigator.share) { try { await navigator.share({ title: barberProfile.shop_name, url: qLink }); } catch(e) {} }
     else { toast('هاوبەشکردن لەم وێبگەڕەدا پشتگیری نەکراوە، کۆپی بکە'); }
   };
 }

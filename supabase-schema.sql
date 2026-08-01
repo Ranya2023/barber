@@ -110,6 +110,40 @@ create table if not exists bookings (
 create index if not exists idx_bookings_barber_date on bookings(barber_id, date);
 create index if not exists idx_bookings_customer on bookings(barber_id, customer_id);
 
+-- Regulars for the no-time queue: same person every week on the same
+-- weekday + period (morning/afternoon/evening), no fixed clock time.
+create table if not exists permanent_queue_clients (
+  id uuid primary key default gen_random_uuid(),
+  barber_id uuid not null references barbers(id) on delete cascade,
+  name text not null,
+  phone text,
+  weekday int not null check (weekday between 0 and 6),
+  period text not null check (period in ('بەیانی','نیوەڕۆ','ئێوارە')),
+  service_chain text[] not null default '{}',
+  created_at timestamptz default now()
+);
+
+-- No-time waiting list ("queue"): walk-ins logged with just a day + period
+-- (no clock time), manually ordered within that period via `position`.
+create table if not exists queue_entries (
+  id uuid primary key default gen_random_uuid(),
+  barber_id uuid not null references barbers(id) on delete cascade,
+  date date not null,
+  period text not null check (period in ('بەیانی','نیوەڕۆ','ئێوارە')),
+  position int not null default 0,
+  name text not null,
+  phone text,
+  service_id uuid references services(id) on delete set null,
+  service_name text,
+  service_chain text[],
+  status text not null default 'چاوەڕوان' check (status in ('چاوەڕوان','تەواوبوو','دواخراوە','هەڵوەشاوە')),
+  type text not null default 'کڕیار' check (type in ('کڕیار','هەمیشەیی')),
+  permanent_queue_client_id uuid references permanent_queue_clients(id) on delete set null,
+  created_at timestamptz default now(),
+  unique (barber_id, permanent_queue_client_id, date)
+);
+create index if not exists idx_queue_barber_date on queue_entries(barber_id, date, period, position);
+
 -- =====================================================================
 --  ROW LEVEL SECURITY
 -- =====================================================================
@@ -121,6 +155,8 @@ alter table working_hours enable row level security;
 alter table blocked_dates enable row level security;
 alter table permanent_clients enable row level security;
 alter table bookings enable row level security;
+alter table permanent_queue_clients enable row level security;
+alter table queue_entries enable row level security;
 
 -- ---------- helper: is the current logged-in user an admin? ----------
 create or replace function is_admin() returns boolean
@@ -171,6 +207,16 @@ create policy bookings_owner_all on bookings for all
 -- Anonymous customers never query this table directly — they use the
 -- rpc_* functions below, which run with elevated rights but only ever
 -- touch the one booking that belongs to them.
+
+-- ---------- permanent_queue_clients (private) ----------
+create policy queue_perm_owner_all on permanent_queue_clients for all
+  using (barber_id = auth.uid()) with check (barber_id = auth.uid());
+
+-- ---------- queue_entries (private) ----------
+create policy queue_owner_all on queue_entries for all
+  using (barber_id = auth.uid()) with check (barber_id = auth.uid());
+-- Anonymous customers never touch this table directly — they use
+-- rpc_queue_join() below.
 
 -- =====================================================================
 --  PUBLIC / CUSTOMER-FACING FUNCTIONS  (security definer, tightly scoped)
@@ -367,12 +413,69 @@ begin
 end;
 $$;
 
+-- A customer joining the no-time queue for a given day + period (morning/
+-- afternoon/evening) — used by queue.html via QR code. Adds them to the end
+-- of that period's line and returns their id + position in line.
+create or replace function rpc_queue_join(
+  p_barber_id uuid, p_name text, p_phone text, p_service_id uuid,
+  p_date date, p_period text
+) returns table(queue_id uuid, queue_position int)
+language plpgsql security definer set search_path = public as $$
+declare
+  v_weekday int := extract(dow from p_date)::int;
+  v_wh working_hours%rowtype;
+  v_svc services%rowtype;
+  v_next_pos int;
+  v_id uuid;
+  v_enabled boolean;
+begin
+  if p_period not in ('بەیانی','نیوەڕۆ','ئێوارە') then
+    raise exception 'کاتێکی نادروست';
+  end if;
+  if p_name is null or trim(p_name) = '' then
+    raise exception 'تکایە ناو بنووسە';
+  end if;
+
+  if exists (select 1 from blocked_dates where barber_id = p_barber_id and date = p_date) then
+    raise exception 'ئەم ڕۆژە پشوودراوە';
+  end if;
+
+  select * into v_wh from working_hours where barber_id = p_barber_id and weekday = v_weekday;
+  if not found or not v_wh.is_working then
+    raise exception 'ئەم ڕۆژە کارناکرێت';
+  end if;
+  v_enabled := case p_period
+    when 'بەیانی' then v_wh.morning_enabled
+    when 'نیوەڕۆ' then v_wh.afternoon_enabled
+    else v_wh.evening_enabled
+  end;
+  if not v_enabled then
+    raise exception 'ئەم کاتە کارناکرێت';
+  end if;
+
+  if p_service_id is not null then
+    select * into v_svc from services where id = p_service_id and barber_id = p_barber_id;
+  end if;
+
+  select coalesce(max(position), -1) + 1 into v_next_pos
+  from queue_entries
+  where barber_id = p_barber_id and date = p_date and period = p_period
+    and status not in ('هەڵوەشاوە');
+
+  insert into queue_entries (barber_id, name, phone, service_id, service_name, date, period, position, status, type)
+  values (p_barber_id, p_name, p_phone, p_service_id, v_svc.name, p_date, p_period, v_next_pos, 'چاوەڕوان', 'کڕیار')
+  returning id into v_id;
+
+  return query select v_id, v_next_pos;
+end;
+$$;
+
 -- =====================================================================
 --  PERMISSIONS
 -- =====================================================================
 grant usage on schema public to anon, authenticated;
 
-grant select, insert, update, delete on barbers, services, working_hours, blocked_dates, permanent_clients, bookings to authenticated;
+grant select, insert, update, delete on barbers, services, working_hours, blocked_dates, permanent_clients, bookings, permanent_queue_clients, queue_entries to authenticated;
 grant select, insert, update on admins, invite_codes to authenticated;
 
 grant execute on function rpc_get_barber_public_info(uuid) to anon, authenticated;
@@ -382,6 +485,7 @@ grant execute on function rpc_get_available_slots(uuid,date,uuid) to anon, authe
 grant execute on function rpc_create_booking(uuid,text,text,text,uuid,date,time) to anon, authenticated;
 grant execute on function rpc_get_customer_upcoming(uuid,text) to anon, authenticated;
 grant execute on function rpc_cancel_by_customer(uuid,text) to anon, authenticated;
+grant execute on function rpc_queue_join(uuid,text,text,uuid,date,text) to anon, authenticated;
 grant execute on function is_admin() to authenticated;
 
 -- =====================================================================
