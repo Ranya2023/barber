@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B1714">
+<title>داشبۆردی سەرتاش</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      fontFamily: { kurdish: ['Vazirmatn','sans-serif'] },
+      colors: { brass:'#C9A356', barberred:'#B33A3A', inkbg:'#1B1714', panel:'#241E1A' }
+    }}
+  }
+</script>
+<style>
+  * { font-family: 'Vazirmatn', sans-serif; }
+  html { -webkit-tap-highlight-color: transparent; }
+  .pole-strip { background: repeating-linear-gradient(-45deg, #F7F3EC 0 10px, #B33A3A 10px 20px, #F7F3EC 20px 30px, #C9A356 30px 40px); }
+  .tap { transition: transform .08s ease; }
+  .tap:active { transform: scale(.96); }
+  .modal-bg { backdrop-filter: blur(3px); }
+  ::-webkit-scrollbar { display:none; }
+  .tabbtn.active { color: #C9A356; }
+  .tabbtn.active .tabdot { display:block; }
+</style>
+</head>
+<body class="min-h-screen bg-[#F7F3EC] dark:bg-inkbg text-[#1B1714] dark:text-[#F7F3EC] transition-colors">
+
+<!-- ========================= لۆگین ========================= -->
+<div id="loginView" class="min-h-screen flex flex-col items-center justify-center px-6" style="padding-top: env(safe-area-inset-top);">
+  <div class="w-14 h-14 rounded-2xl pole-strip shadow-lg mb-4 border border-black/10"></div>
+  <h1 class="text-2xl font-extrabold mb-1">داشبۆردی سەرتاش</h1>
+  <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-8">بچۆرە ژوورەوە بۆ بەڕێوەبردنی نۆرەکانت</p>
+  <div class="w-full max-w-sm">
+    <label class="block text-sm font-semibold mb-1.5">ئیمەیل</label>
+    <input id="loginEmail" type="email" placeholder="you@example.com" dir="ltr"
+      class="w-full rounded-xl px-4 py-3.5 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base text-right">
+    <label class="block text-sm font-semibold mb-1.5">وشەی نهێنی</label>
+    <input id="loginPassword" type="password" placeholder="••••••••" dir="ltr"
+      class="w-full rounded-xl px-4 py-3.5 mb-2 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base text-right">
+    <div id="loginError" class="hidden text-barberred text-sm mb-3"></div>
+    <button id="loginBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-base shadow-lg shadow-brass/20 mt-4">چوونەژوورەوە</button>
+    <p class="text-xs text-center text-[#6b6259] dark:text-[#8A7F72] mt-4">ئیمەیل و وشەی نهێنیت لەلایەن ئەدمینەوە پێت دراوە</p>
+  </div>
+</div>
+
+<!-- ========================= ئەپی سەرەکی ========================= -->
+<div id="appView" class="hidden min-h-screen flex flex-col max-w-md mx-auto pb-24">
+
+  <header class="flex items-center justify-between px-5 pt-5 pb-3" style="padding-top: calc(env(safe-area-inset-top) + 1rem);">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full pole-strip shadow-inner border border-black/10"></div>
+      <div>
+        <div id="hdrShopName" class="font-extrabold leading-none">…</div>
+        <div id="offlineTag" class="hidden text-[10px] text-barberred font-bold mt-1">⚠ ئۆفلاین — دیمەنی هەڵگیراو</div>
+      </div>
+    </div>
+    <button id="themeToggle" class="tap w-10 h-10 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-lg border border-black/5 dark:border-white/10">🌙</button>
+  </header>
+
+  <main class="flex-1 px-5">
+
+    <!-- ------------------ تابی سەرەکی ------------------ -->
+    <section id="tabHome" class="tabpane">
+      <div class="flex items-center justify-between mb-3">
+        <button id="prevDay" class="tap w-9 h-9 rounded-full bg-white dark:bg-panel border border-black/10 dark:border-white/10">›</button>
+        <div class="text-center">
+          <div id="dateLabel" class="font-bold text-sm"></div>
+          <button id="todayBtn" class="text-xs text-brass font-semibold">گەڕانەوە بۆ ئەمڕۆ</button>
+        </div>
+        <button id="nextDay" class="tap w-9 h-9 rounded-full bg-white dark:bg-panel border border-black/10 dark:border-white/10">‹</button>
+      </div>
+
+      <button id="addWalkInBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-3 rounded-xl mb-4 text-sm">+ زیادکردنی کڕیاری سەردانکەر</button>
+
+      <div id="nextCardWrap"></div>
+
+      <div id="dayList" class="flex flex-col gap-3"></div>
+      <div id="dayEmpty" class="hidden text-center py-16 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ نۆرەیەک نییە بۆ ئەم ڕۆژە 🗓️</div>
+    </section>
+
+    <!-- ------------------ تابی هەمیشەیی ------------------ -->
+    <section id="tabPerm" class="tabpane hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-extrabold">کڕیارە هەمیشەییەکان</h2>
+        <button id="addPermBtn" class="tap bg-brass text-inkbg font-bold px-3 py-2 rounded-lg text-xs">+ زیادکردن</button>
+      </div>
+      <div id="permList" class="flex flex-col gap-3"></div>
+      <div id="permEmpty" class="hidden text-center py-16 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
+    </section>
+
+    <!-- ------------------ تابی سێرڤس ------------------ -->
+    <section id="tabServices" class="tabpane hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-extrabold">سێرڤسەکان</h2>
+        <button id="addSvcBtn" class="tap bg-brass text-inkbg font-bold px-3 py-2 rounded-lg text-xs">+ زیادکردن</button>
+      </div>
+      <div id="svcList" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- ------------------ تابی لینک/QR ------------------ -->
+    <section id="tabLink" class="tabpane hidden">
+      <h2 class="text-lg font-extrabold mb-4">لینک و کۆدی QR</h2>
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-5 text-center mb-4">
+        <img id="qrImg" class="mx-auto rounded-xl mb-4 w-48 h-48 bg-white p-2" />
+        <p class="text-xs text-[#6b6259] dark:text-[#8A7F72] mb-2">ئەم لینک/QR ـە بدە بە کڕیارەکانت بۆ گرتنی نۆرە</p>
+        <div id="bookingLinkText" class="text-xs break-all bg-[#F7F3EC] dark:bg-inkbg rounded-lg p-3 mb-3" dir="ltr"></div>
+        <div class="flex gap-2">
+          <button id="copyLinkBtn" class="tap flex-1 bg-brass text-inkbg font-bold py-2.5 rounded-lg text-sm">کۆپیکردن</button>
+          <button id="shareLinkBtn" class="tap flex-1 border border-brass text-brass font-bold py-2.5 rounded-lg text-sm">هاوبەشکردن</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------ تابی ڕێکخستن ------------------ -->
+    <section id="tabSettings" class="tabpane hidden">
+      <h2 class="text-lg font-extrabold mb-4">ڕێکخستن</h2>
+
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 mb-4">
+        <div class="font-bold text-sm mb-3">کاتی کار</div>
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <label class="text-xs text-[#6b6259] dark:text-[#8A7F72]">لە کاتژمێر</label>
+            <input id="workStart" type="time" class="w-full mt-1 rounded-lg px-3 py-2 bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10 text-sm" dir="ltr">
+          </div>
+          <div class="flex-1">
+            <label class="text-xs text-[#6b6259] dark:text-[#8A7F72]">بۆ کاتژمێر</label>
+            <input id="workEnd" type="time" class="w-full mt-1 rounded-lg px-3 py-2 bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10 text-sm" dir="ltr">
+          </div>
+        </div>
+        <button id="saveHoursBtn" class="tap w-full bg-brass text-inkbg font-bold py-2.5 rounded-lg text-sm mt-3">پاشەکەوتکردن</button>
+      </div>
+
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-bold text-sm">ڕۆژانی پشوو / جەژن</div>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <input id="holidayDate" type="date" class="flex-1 rounded-lg px-3 py-2 bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10 text-sm" dir="ltr">
+          <button id="addHolidayBtn" class="tap bg-brass text-inkbg font-bold px-4 rounded-lg text-sm">زیادکردن</button>
+        </div>
+        <input id="holidayReason" type="text" placeholder="هۆکار (ئارەزوومەندانە)" class="w-full rounded-lg px-3 py-2 mb-3 bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10 text-sm">
+        <div id="holidayList" class="flex flex-col gap-2"></div>
+      </div>
+
+      <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 mb-4 flex items-center justify-between">
+        <div class="font-bold text-sm">دۆخی تاریک</div>
+        <button id="themeToggle2" class="tap w-12 h-7 rounded-full bg-black/10 dark:bg-brass relative transition-colors">
+          <span id="themeDot" class="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform"></span>
+        </button>
+      </div>
+
+      <div id="queueInfo" class="hidden rounded-2xl bg-barberred/10 border border-barberred/30 p-4 mb-4 text-sm text-barberred"></div>
+
+      <button id="logoutBtn" class="tap w-full border-2 border-barberred text-barberred font-extrabold py-3.5 rounded-xl text-sm">دەرچوون لە هەژمار</button>
+    </section>
+
+  </main>
+
+  <!-- ------------------ تووڕی خوارەوە ------------------ -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-panel/95 backdrop-blur border-t border-black/10 dark:border-white/10" style="padding-bottom: env(safe-area-inset-bottom);">
+    <div class="max-w-md mx-auto grid grid-cols-5">
+      <button class="tabbtn active tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Home"><span class="text-lg">🏠</span><span class="text-[10px] font-bold">سەرەکی</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+      <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Perm"><span class="text-lg">🔁</span><span class="text-[10px] font-bold">هەمیشەیی</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+      <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Services"><span class="text-lg">✂️</span><span class="text-[10px] font-bold">سێرڤس</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+      <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Link"><span class="text-lg">🔗</span><span class="text-[10px] font-bold">لینک</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+      <button class="tabbtn tap flex flex-col items-center gap-1 py-3 text-[#6b6259] dark:text-[#8A7F72]" data-tab="Settings"><span class="text-lg">⚙️</span><span class="text-[10px] font-bold">ڕێکخستن</span><span class="tabdot hidden w-1 h-1 rounded-full bg-brass"></span></button>
+    </div>
+  </nav>
+</div>
+
+<!-- ========================= مۆداڵی گشتی ========================= -->
+<div id="modalRoot" class="hidden fixed inset-0 z-50 modal-bg bg-black/40 flex items-end sm:items-center justify-center">
+  <div class="bg-[#F7F3EC] dark:bg-inkbg w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[88vh] overflow-y-auto" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1.25rem);">
+    <div class="w-10 h-1.5 bg-black/20 dark:bg-white/20 rounded-full mx-auto mb-4 sm:hidden"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toastRoot" class="fixed bottom-24 inset-x-0 flex justify-center z-[60] pointer-events-none"></div>
+
+<script>
+// =====================================================================
+const CONFIG = { GAS_URL: 'https://script.google.com/macros/s/AKfycbzl1dMgrQPr5cdpERsXCF1OfP14437-2HrPbaSr-RoiEqvkC4ydK6P6O8FErtesXOyq/exec' };
+const WEEKDAY_LABELS = ['یەکشەممە','دووشەممە','سێشەممە','چوارشەممە','پێنجشەممە','هەینی','شەممە'];
+const STATUS_STYLE = {
+  'چاوەڕوان': 'bg-brass/15 text-brass',
+  'تەواوبوو': 'bg-green-500/15 text-green-700 dark:text-green-400',
+  'دواخراوە': 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
+  'هەڵوەشاوە': 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]'
+};
+
+let auth = null;
+let dashboardData = null;
+let selectedDate = fmt(new Date());
+let activeTab = 'Home';
+
+// ---------- API ----------
+async function api(action, data) {
+  const res = await fetch(CONFIG.GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, data })
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'هەڵەیەک ڕوویدا');
+  return json.result;
+}
+async function apiWrite(action, data, successMsg) {
+  try {
+    const result = await api(action, data);
+    if (successMsg) toast(successMsg);
+    return result;
+  } catch (err) {
+    if (err instanceof TypeError || !navigator.onLine) {
+      queueAction(action, data);
+      toast('لە دۆخی ئۆفلاینیت — کاتێک ئینتەرنێت هەبێت دەنێردرێت 📶');
+      return { queued: true };
+    }
+    toast(err.message, true);
+    throw err;
+  }
+}
+
+// ---------- queue (offline writes) ----------
+function queueAction(action, data) {
+  const q = JSON.parse(localStorage.getItem('pendingQueue') || '[]');
+  q.push({ action, data, ts: Date.now() });
+  localStorage.setItem('pendingQueue', JSON.stringify(q));
+  renderQueueInfo();
+}
+async function flushQueue() {
+  let q = JSON.parse(localStorage.getItem('pendingQueue') || '[]');
+  if (!q.length) return;
+  const remaining = [];
+  for (const item of q) {
+    try { await api(item.action, item.data); }
+    catch (e) { remaining.push(item); }
+  }
+  localStorage.setItem('pendingQueue', JSON.stringify(remaining));
+  renderQueueInfo();
+  if (remaining.length < q.length) loadDashboard(true);
+}
+function renderQueueInfo() {
+  const q = JSON.parse(localStorage.getItem('pendingQueue') || '[]');
+  const el = document.getElementById('queueInfo');
+  if (q.length) {
+    el.classList.remove('hidden');
+    el.textContent = `📶 ${q.length} گۆڕانکاری چاوەڕوانن بۆ ناردن کاتێک ئینتەرنێت هەبێت`;
+  } else el.classList.add('hidden');
+}
+window.addEventListener('online', flushQueue);
+setInterval(() => { if (navigator.onLine) flushQueue(); }, 30000);
+
+// ---------- تیم ----------
+function applyTheme(t) {
+  document.documentElement.classList.toggle('dark', t === 'dark');
+  document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️' : '🌙';
+  const dot = document.getElementById('themeDot');
+  if (dot) dot.style.transform = t === 'dark' ? 'translateX(-20px)' : 'translateX(0)';
+  localStorage.setItem('theme', t);
+}
+(function initTheme() {
+  applyTheme(localStorage.getItem('theme') || 'dark');
+})();
+document.getElementById('themeToggle').onclick = () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+document.getElementById('themeToggle2').onclick = () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+
+// ---------- toast ----------
+function toast(msg, isError) {
+  const root = document.getElementById('toastRoot');
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto ${isError ? 'bg-barberred' : 'bg-inkbg dark:bg-brass'} ${isError ? 'text-white' : 'text-white dark:text-inkbg'} text-sm font-bold px-4 py-2.5 rounded-full shadow-lg mb-2`;
+  el.textContent = msg;
+  root.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ---------- بارکردن/فۆرماتی کات ----------
+function fmt(d) { const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function weekdayOf(dateStr) { return new Date(dateStr + 'T00:00:00').getDay(); }
+function intlPhone(p) {
+  p = String(p || '').replace(/[^\d+]/g, '');
+  if (p.startsWith('+')) return p;
+  if (p.startsWith('0')) return '+964' + p.substring(1);
+  return p ? '+964' + p : '';
+}
+function nowMinutes() { const n = new Date(); return n.getHours()*60+n.getMinutes(); }
+function toMin(t){ const p=String(t).split(':'); return Number(p[0])*60+Number(p[1]); }
+
+// =====================================================================
+//  لۆگین
+// =====================================================================
+function loadAuth() { try { return JSON.parse(localStorage.getItem('barberAuth')); } catch(e){ return null; } }
+function saveAuth(a) { localStorage.setItem('barberAuth', JSON.stringify(a)); }
+function clearAuth() { localStorage.removeItem('barberAuth'); }
+
+document.getElementById('loginBtn').onclick = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  if (!email || !password) { errEl.textContent = 'تکایە ئیمەیل و وشەی نهێنی بنووسە'; errEl.classList.remove('hidden'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
+  try {
+    const res = await api('barberLogin', { email, password });
+    auth = res;
+    saveAuth(auth);
+    startApp();
+  } catch (e) {
+    errEl.textContent = e.message; errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = 'چوونەژوورەوە';
+  }
+};
+
+document.getElementById('logoutBtn').onclick = () => {
+  if (!confirm('دڵنیایت لە دەرچوون؟')) return;
+  clearAuth();
+  location.reload();
+};
+
+// =====================================================================
+//  دەستپێکردن
+// =====================================================================
+function startApp() {
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('hdrShopName').textContent = auth.shopName || auth.name;
+  renderQueueInfo();
+  setupBookingLink();
+  loadDashboard();
+  flushQueue();
+}
+async function loadDashboard(silent) {
+  try {
+    const data = await api('getDashboard', { token: auth.token });
+    dashboardData = data;
+    localStorage.setItem('cachedDashboard_' + auth.barberId, JSON.stringify(data));
+    document.getElementById('offlineTag').classList.add('hidden');
+    document.getElementById('workStart').value = data.barber.workStart || '09:00';
+    document.getElementById('workEnd').value = data.barber.workEnd || '21:00';
+    renderAll();
+  } catch (e) {
+    const cached = localStorage.getItem('cachedDashboard_' + auth.barberId);
+    if (cached) {
+      dashboardData = JSON.parse(cached);
+      document.getElementById('offlineTag').classList.remove('hidden');
+      renderAll();
+      if (!silent) toast('نەتوانرا نوێترین داتا بهێنرێت — دیمەنی هەڵگیراو پیشان دەدرێت', true);
+    } else if (!silent) {
+      toast(e.message, true);
+    }
+  }
+}
+function renderAll() { renderHome(); renderPerm(); renderServices(); renderHolidays(); }
+
+(function boot() {
+  auth = loadAuth();
+  if (auth && auth.token) startApp();
+})();
+
+// =====================================================================
+//  تابەکان
+// =====================================================================
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.onclick = () => {
+    activeTab = btn.dataset.tab;
+    document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab' + activeTab).classList.remove('hidden');
+  };
+});
+
+// =====================================================================
+//  تابی سەرەکی
+// =====================================================================
+function shiftDate(days) {
+  const d = new Date(selectedDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  selectedDate = fmt(d);
+  renderHome();
+}
+document.getElementById('prevDay').onclick = () => shiftDate(-1); // RTL: ‹ future, › past visually handled by icon choice
+document.getElementById('nextDay').onclick = () => shiftDate(1);
+document.getElementById('todayBtn').onclick = () => { selectedDate = fmt(new Date()); renderHome(); };
+
+function renderHome() {
+  if (!dashboardData) return;
+  const d = new Date(selectedDate + 'T00:00:00');
+  document.getElementById('dateLabel').textContent = `${WEEKDAY_LABELS[d.getDay()]} — ${selectedDate}`;
+
+  const dayBookings = dashboardData.bookings
+    .filter(b => String(b.date).substring(0,10) === selectedDate)
+    .sort((a,b) => toMin(a.time) - toMin(b.time));
+
+  const isToday = selectedDate === fmt(new Date());
+  const nextWrap = document.getElementById('nextCardWrap');
+  nextWrap.innerHTML = '';
+  if (isToday) {
+    const next = dayBookings.find(b => b.status === 'چاوەڕوان' && toMin(b.time) >= nowMinutes());
+    if (next) {
+      nextWrap.innerHTML = `
+        <div class="rounded-2xl overflow-hidden mb-4 shadow-lg">
+          <div class="pole-strip h-1.5"></div>
+          <div class="bg-inkbg text-[#F7F3EC] p-4">
+            <div class="text-[10px] text-brass font-bold mb-1">⏭ نۆرەی داهاتوو</div>
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="font-extrabold text-lg">${esc(next.name)}</div>
+                <div class="text-xs text-[#c8c0b5] mt-0.5">${esc(next.serviceName)}</div>
+              </div>
+              <div class="text-2xl font-extrabold text-brass" dir="ltr">${next.time}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+
+  const list = document.getElementById('dayList');
+  list.innerHTML = '';
+  document.getElementById('dayEmpty').classList.toggle('hidden', dayBookings.length > 0);
+  dayBookings.forEach(b => list.appendChild(bookingCard(b)));
+}
+
+function bookingCard(b) {
+  const el = document.createElement('div');
+  el.className = 'rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4';
+  const phone = b.phone ? intlPhone(b.phone) : '';
+  const statusCls = STATUS_STYLE[b.status] || STATUS_STYLE['چاوەڕوان'];
+  el.innerHTML = `
+    <div class="flex items-start justify-between mb-2">
+      <div>
+        <div class="font-bold ${b.status==='هەڵوەشاوە'?'line-through opacity-60':''}">${esc(b.name)}</div>
+        <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${esc(b.serviceName)} ${b.type==='سەردانکەر'?'· سەردانکەر':b.type==='هەمیشەیی'?'· هەمیشەیی':''}</div>
+      </div>
+      <div class="text-left">
+        <div class="font-extrabold" dir="ltr">${b.time}</div>
+        <span class="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCls}">${b.status}</span>
+      </div>
+    </div>
+    ${phone ? `
+    <div class="flex gap-2 mb-2">
+      <a href="tel:${phone}" class="tap flex-1 text-center bg-[#F7F3EC] dark:bg-inkbg rounded-lg py-2 text-xs font-bold border border-black/10 dark:border-white/10">📞 پەیوەندی</a>
+      <a href="https://wa.me/${phone.replace('+','')}" target="_blank" class="tap flex-1 text-center bg-[#25D366]/10 text-[#128C4A] dark:text-[#25D366] rounded-lg py-2 text-xs font-bold border border-[#25D366]/30">💬 واتساپ</a>
+    </div>` : ''}
+    <div class="flex flex-wrap gap-1.5 status-actions"></div>
+  `;
+  const actions = el.querySelector('.status-actions');
+  const mkBtn = (label, cls, fn) => { const btn=document.createElement('button'); btn.className='tap text-[11px] font-bold px-2.5 py-1.5 rounded-lg '+cls; btn.textContent=label; btn.onclick=fn; return btn; };
+
+  if (b.status === 'چاوەڕوان') {
+    actions.appendChild(mkBtn('✓ تەواو', 'bg-green-500/15 text-green-700 dark:text-green-400', () => setStatus(b.bookingId,'تەواوبوو')));
+    actions.appendChild(mkBtn('⏸ دواخستن', 'bg-orange-500/15 text-orange-700 dark:text-orange-400', () => setStatus(b.bookingId,'دواخراوە')));
+    actions.appendChild(mkBtn('📅 گۆڕینی کات', 'bg-brass/15 text-brass', () => openReschedule(b)));
+    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => setStatus(b.bookingId,'هەڵوەشاوە')));
+  } else if (b.status === 'دواخراوە') {
+    actions.appendChild(mkBtn('📅 دیاریکردنی کاتی نوێ', 'bg-brass/15 text-brass', () => openReschedule(b)));
+    actions.appendChild(mkBtn('✕ هەڵوەشاندنەوە', 'bg-barberred/10 text-barberred', () => setStatus(b.bookingId,'هەڵوەشاوە')));
+  } else {
+    actions.appendChild(mkBtn('↩ گەڕاندنەوە بۆ چاوەڕوان', 'bg-black/10 dark:bg-white/10 text-[#6b6259] dark:text-[#8A7F72]', () => setStatus(b.bookingId,'چاوەڕوان')));
+  }
+  return el;
+}
+
+async function setStatus(bookingId, status) {
+  await apiWrite('updateBookingStatus', { token: auth.token, bookingId, status }, 'نوێکرایەوە ✓');
+  const b = dashboardData.bookings.find(x=>x.bookingId===bookingId);
+  if (b) b.status = status;
+  renderHome();
+}
+
+function openReschedule(b) {
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">گۆڕینی کات — ${esc(b.name)}</h3>
+    <label class="block text-sm font-semibold mb-1.5">بەرواری نوێ</label>
+    <input id="mDate" type="date" value="${String(b.date).substring(0,10)}" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">کاتژمێری نوێ</label>
+    <input id="mTime" type="time" value="${b.time}" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
+  `);
+  document.getElementById('mSave').onclick = async () => {
+    const date = document.getElementById('mDate').value;
+    const time = document.getElementById('mTime').value;
+    if (!date || !time) return toast('تکایە بەروار و کاتژمێر دیاری بکە', true);
+    try {
+      await apiWrite('rescheduleBooking', { token: auth.token, bookingId: b.bookingId, date, time }, 'کاتی نۆرە گۆڕدرا ✓');
+      closeModal();
+      loadDashboard(true);
+    } catch(e) {}
+  };
+}
+
+document.getElementById('addWalkInBtn').onclick = () => {
+  const svcOptions = dashboardData.services.map(s => `<option value="${s.serviceId}">${esc(s.name)}</option>`).join('');
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">زیادکردنی کڕیاری سەردانکەر</h3>
+    <label class="block text-sm font-semibold mb-1.5">ناو</label>
+    <input id="mName" type="text" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل (ئارەزوومەندانە)</label>
+    <input id="mPhone" type="tel" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <label class="block text-sm font-semibold mb-1.5">سێرڤس</label>
+    <select id="mSvc" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">${svcOptions}</select>
+    <label class="block text-sm font-semibold mb-1.5">کاتژمێر</label>
+    <input id="mTime" type="time" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">زیادکردن</button>
+  `);
+  document.getElementById('mSave').onclick = async () => {
+    const name = document.getElementById('mName').value.trim();
+    const phone = document.getElementById('mPhone').value.trim();
+    const serviceId = document.getElementById('mSvc').value;
+    const time = document.getElementById('mTime').value;
+    if (!name || !time) return toast('تکایە ناو و کاتژمێر پڕبکەرەوە', true);
+    try {
+      await apiWrite('addWalkIn', { token: auth.token, name, phone, serviceId, date: selectedDate, time }, 'زیادکرا ✓');
+      closeModal();
+      loadDashboard(true);
+    } catch(e) {}
+  };
+};
+
+// =====================================================================
+//  تابی کڕیارە هەمیشەییەکان
+// =====================================================================
+function renderPerm() {
+  if (!dashboardData) return;
+  const list = document.getElementById('permList');
+  list.innerHTML = '';
+  const perms = dashboardData.permanentClients || [];
+  document.getElementById('permEmpty').classList.toggle('hidden', perms.length > 0);
+  perms.forEach(p => {
+    const chain = String(p.serviceChain||'').split(',').filter(String).map(id => {
+      const s = dashboardData.services.find(x=>x.serviceId===id);
+      return s ? s.name : '؟';
+    });
+    const el = document.createElement('div');
+    el.className = 'rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4';
+    el.innerHTML = `
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-bold">${esc(p.name)}</div>
+          <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${WEEKDAY_LABELS[p.weekday]} — کاتژمێر ${p.time}</div>
+        </div>
+        <div class="flex gap-1.5">
+          <button class="tap text-xs px-2 py-1 rounded-lg bg-brass/15 text-brass font-bold editP">✎</button>
+          <button class="tap text-xs px-2 py-1 rounded-lg bg-barberred/10 text-barberred font-bold delP">✕</button>
+        </div>
+      </div>
+      <div class="text-xs text-[#6b6259] dark:text-[#8A7F72]">🔁 زنجیرە: ${chain.map((c,i)=>`${i+1}. ${esc(c)}`).join(' → ') || '—'}</div>
+    `;
+    el.querySelector('.editP').onclick = () => openPermForm(p);
+    el.querySelector('.delP').onclick = async () => {
+      if (!confirm('سڕینەوەی ئەم کڕیارە هەمیشەییە؟')) return;
+      await apiWrite('deletePermanentClient', { token: auth.token, permId: p.permId }, 'سڕایەوە ✓');
+      loadDashboard(true);
+    };
+    list.appendChild(el);
+  });
+}
+
+document.getElementById('addPermBtn').onclick = () => openPermForm(null);
+
+function openPermForm(p) {
+  let chain = p ? String(p.serviceChain||'').split(',').filter(String) : [];
+  const svcChips = dashboardData.services.map(s => `<button type="button" data-id="${s.serviceId}" class="tap chipBtn text-xs font-bold px-3 py-2 rounded-lg bg-[#F7F3EC] dark:bg-inkbg border border-black/10 dark:border-white/10">${esc(s.name)}</button>`).join('');
+  const wdOptions = WEEKDAY_LABELS.map((w,i)=>`<option value="${i}" ${p&&p.weekday==i?'selected':''}>${w}</option>`).join('');
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">${p?'دەستکاریکردنی':'زیادکردنی'} کڕیاری هەمیشەیی</h3>
+    <label class="block text-sm font-semibold mb-1.5">ناو</label>
+    <input id="mName" type="text" value="${p?esc(p.name):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل</label>
+    <input id="mPhone" type="tel" dir="ltr" value="${p?esc(p.phone):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <label class="block text-sm font-semibold mb-1.5">ڕۆژی هەفتە</label>
+    <select id="mWeekday" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">${wdOptions}</select>
+    <label class="block text-sm font-semibold mb-1.5">کاتژمێر</label>
+    <input id="mTime" type="time" dir="ltr" value="${p?p.time:''}" class="w-full rounded-xl px-4 py-3 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">زنجیرەی سێرڤس (بەم ڕیزە کرتە بکە)</label>
+    <div class="flex flex-wrap gap-2 mb-3">${svcChips}</div>
+    <div id="chainPreview" class="text-xs text-brass font-semibold mb-5 min-h-[1.2rem]"></div>
+    <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
+  `);
+  function renderChain() {
+    const names = chain.map(id => dashboardData.services.find(s=>s.serviceId===id)?.name || '؟');
+    document.getElementById('chainPreview').textContent = names.length ? names.map((n,i)=>`${i+1}. ${n}`).join(' → ') + '  (کرتەی دووبارە بۆ سڕینەوە)' : 'هیچ زنجیرەیەک نەبژێردراوە';
+  }
+  renderChain();
+  document.querySelectorAll('.chipBtn').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const idx = chain.indexOf(id);
+      if (idx > -1) chain.splice(idx,1); else chain.push(id);
+      renderChain();
+    };
+  });
+  document.getElementById('mSave').onclick = async () => {
+    const name = document.getElementById('mName').value.trim();
+    const phone = document.getElementById('mPhone').value.trim();
+    const weekday = document.getElementById('mWeekday').value;
+    const time = document.getElementById('mTime').value;
+    if (!name || !phone || !time || !chain.length) return toast('تکایە هەموو خانەکان و زنجیرەی سێرڤس پڕبکەرەوە', true);
+    try {
+      await apiWrite('savePermanentClient', { token: auth.token, permId: p?p.permId:null, name, phone, weekday, time, serviceChain: chain }, 'پاشەکەوتکرا ✓');
+      closeModal();
+      loadDashboard(true);
+    } catch(e) {}
+  };
+}
+
+// =====================================================================
+//  تابی سێرڤس
+// =====================================================================
+function renderServices() {
+  if (!dashboardData) return;
+  const list = document.getElementById('svcList');
+  list.innerHTML = '';
+  dashboardData.services.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 flex items-center justify-between';
+    el.innerHTML = `
+      <div>
+        <div class="font-bold">${esc(s.name)}</div>
+        <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${s.duration} خولەک · ${s.price} د.ع</div>
+      </div>
+      <div class="flex gap-1.5">
+        <button class="tap text-xs px-2.5 py-1.5 rounded-lg bg-brass/15 text-brass font-bold editS">✎</button>
+        <button class="tap text-xs px-2.5 py-1.5 rounded-lg bg-barberred/10 text-barberred font-bold delS">✕</button>
+      </div>`;
+    el.querySelector('.editS').onclick = () => openServiceForm(s);
+    el.querySelector('.delS').onclick = async () => {
+      if (!confirm('سڕینەوەی ئەم سێرڤسە؟')) return;
+      await apiWrite('deleteService', { token: auth.token, serviceId: s.serviceId }, 'سڕایەوە ✓');
+      loadDashboard(true);
+    };
+    list.appendChild(el);
+  });
+}
+document.getElementById('addSvcBtn').onclick = () => openServiceForm(null);
+function openServiceForm(s) {
+  openModal(`
+    <h3 class="text-lg font-extrabold mb-4">${s?'دەستکاریکردنی':'زیادکردنی'} سێرڤس</h3>
+    <label class="block text-sm font-semibold mb-1.5">ناوی سێرڤس</label>
+    <input id="mName" type="text" value="${s?esc(s.name):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">ماوە (بە خولەک)</label>
+    <input id="mDur" type="number" inputmode="numeric" value="${s?s.duration:'30'}" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <label class="block text-sm font-semibold mb-1.5">نرخ (د.ع)</label>
+    <input id="mPrice" type="number" inputmode="numeric" value="${s?s.price:''}" dir="ltr" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
+  `);
+  document.getElementById('mSave').onclick = async () => {
+    const name = document.getElementById('mName').value.trim();
+    const duration = document.getElementById('mDur').value;
+    const price = document.getElementById('mPrice').value;
+    if (!name || !duration || !price) return toast('تکایە هەموو خانەکان پڕبکەرەوە', true);
+    try {
+      await apiWrite('saveService', { token: auth.token, serviceId: s?s.serviceId:null, name, duration, price }, 'پاشەکەوتکرا ✓');
+      closeModal();
+      loadDashboard(true);
+    } catch(e) {}
+  };
+}
+
+// =====================================================================
+//  تابی لینک/QR
+// =====================================================================
+function setupBookingLink() {
+  const link = new URL('./booking.html', location.href).toString() + '?b=' + encodeURIComponent(auth.barberId);
+  document.getElementById('bookingLinkText').textContent = link;
+  document.getElementById('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=' + encodeURIComponent(link);
+  document.getElementById('copyLinkBtn').onclick = async () => {
+    try { await navigator.clipboard.writeText(link); toast('لینک کۆپیکرا ✓'); }
+    catch(e) { toast('نەتوانرا کۆپی بکرێت', true); }
+  };
+  document.getElementById('shareLinkBtn').onclick = async () => {
+    if (navigator.share) { try { await navigator.share({ title: auth.shopName, url: link }); } catch(e) {} }
+    else { toast('هاوبەشکردن لەم وێبگەڕەدا پشتگیری نەکراوە، کۆپی بکە'); }
+  };
+}
+
+// =====================================================================
+//  تابی ڕێکخستن — کاتی کار / ڕۆژانی پشوو
+// =====================================================================
+document.getElementById('saveHoursBtn').onclick = async () => {
+  const workStart = document.getElementById('workStart').value;
+  const workEnd = document.getElementById('workEnd').value;
+  if (!workStart || !workEnd) return toast('تکایە کاتی کار دیاری بکە', true);
+  await apiWrite('setWorkingHours', { token: auth.token, workStart, workEnd }, 'کاتی کار پاشەکەوتکرا ✓');
+};
+
+function renderHolidays() {
+  const list = document.getElementById('holidayList');
+  list.innerHTML = '';
+  (dashboardData?.blockedDates || []).sort((a,b)=> String(a.date).localeCompare(String(b.date))).forEach(bd => {
+    const el = document.createElement('div');
+    el.className = 'flex items-center justify-between bg-[#F7F3EC] dark:bg-inkbg rounded-lg px-3 py-2 text-sm';
+    el.innerHTML = `<span>🚫 ${String(bd.date).substring(0,10)} ${bd.reason?'— '+esc(bd.reason):''}</span>
+      <button class="tap text-barberred font-bold delB">✕</button>`;
+    el.querySelector('.delB').onclick = async () => {
+      await apiWrite('removeBlockedDate', { token: auth.token, blockId: bd.blockId }, 'سڕایەوە ✓');
+      loadDashboard(true);
+    };
+    list.appendChild(el);
+  });
+}
+document.getElementById('addHolidayBtn').onclick = async () => {
+  const date = document.getElementById('holidayDate').value;
+  const reason = document.getElementById('holidayReason').value.trim();
+  if (!date) return toast('تکایە بەروار دیاری بکە', true);
+  await apiWrite('addBlockedDate', { token: auth.token, date, reason }, 'زیادکرا ✓');
+  document.getElementById('holidayDate').value = '';
+  document.getElementById('holidayReason').value = '';
+  loadDashboard(true);
+};
+
+// =====================================================================
+//  مۆدال
+// =====================================================================
+function openModal(html) {
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalRoot').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modalRoot').classList.add('hidden'); }
+document.getElementById('modalRoot').addEventListener('click', (e) => { if (e.target.id === 'modalRoot') closeModal(); });
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- PWA ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
