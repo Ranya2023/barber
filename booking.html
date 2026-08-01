@@ -263,7 +263,7 @@ function showUpcoming(b, customerId){
   const el = document.getElementById('upcomingBanner');
   el.classList.remove('hidden');
   document.getElementById('upcomingText').textContent =
-    `${b.service_name} — ${weekdayName(b.date)} ${b.date} — کاتژمێر ${String(b.time).substring(0,5)}`;
+    `${b.service_name} — ${weekdayName(b.date)} ${b.date} — کاتژمێر ${String(b.booking_time).substring(0,5)}`;
   document.getElementById('cancelUpcomingBtn').onclick = async () => {
     if (!confirm('دڵنیایت لە هەڵوەشاندنەوەی نۆرەکەت؟')) return;
     await supabase.rpc('rpc_cancel_by_customer', { p_booking_id: b.booking_id, p_customer_id: customerId });
