@@ -347,7 +347,7 @@ $$;
 -- A customer's own next upcoming booking (used to show the "you have a
 -- booking" banner on the booking page, keyed by their local customer id).
 create or replace function rpc_get_customer_upcoming(p_barber_id uuid, p_customer_id text)
-returns table(booking_id uuid, service_name text, date date, time time)
+returns table(booking_id uuid, service_name text, date date, booking_time time)
 language sql security definer set search_path = public stable as $$
   select id, service_name, date, time
   from bookings
