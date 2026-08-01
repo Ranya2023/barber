@@ -15,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
 <script>
   tailwind.config = {
     darkMode: 'class',
@@ -25,33 +27,32 @@
   }
 </script>
 <style>
+  html { font-size: 18px; -webkit-tap-highlight-color: transparent; }
   * { font-family: 'Vazirmatn', sans-serif; }
-  html { -webkit-tap-highlight-color: transparent; }
   body { -webkit-text-size-adjust: 100%; }
   .pole-strip { background: repeating-linear-gradient(-45deg, #F7F3EC 0 10px, #B33A3A 10px 20px, #F7F3EC 20px 30px, #C9A356 30px 40px); }
   .step-seg { height: 6px; border-radius: 999px; flex: 1; transition: background .3s; }
   .tap { transition: transform .08s ease; }
   .tap:active { transform: scale(.96); }
   ::-webkit-scrollbar { display: none; }
+  input:focus-visible, button:focus-visible { outline: 2px solid #C9A356; outline-offset: 2px; }
 </style>
 </head>
 <body class="min-h-screen bg-[#F7F3EC] dark:bg-inkbg text-[#1B1714] dark:text-[#F7F3EC] transition-colors">
 
 <div class="max-w-md mx-auto min-h-screen flex flex-col pb-10" style="padding-top: env(safe-area-inset-top);">
 
-  <!-- سەرپەڕە -->
   <header class="flex items-center justify-between px-5 pt-5 pb-3">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-full pole-strip shadow-inner border border-black/10"></div>
+      <div class="w-10 h-10 rounded-full pole-strip shadow-inner border border-black/10"></div>
       <div>
-        <div id="shopName" class="font-extrabold text-lg leading-none">…</div>
-        <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-1">نۆرەگرتنی سەرتاش</div>
+        <div id="shopName" class="font-extrabold text-xl leading-none">…</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-1">نۆرەگرتنی سەرتاش</div>
       </div>
     </div>
-    <button id="themeToggle" class="tap w-10 h-10 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-lg border border-black/5 dark:border-white/10">🌙</button>
+    <button id="themeToggle" class="tap w-11 h-11 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-xl border border-black/5 dark:border-white/10">🌙</button>
   </header>
 
-  <!-- تووڕەی هەنگاوەکان -->
   <div id="stepBar" class="flex gap-1.5 px-5 mb-4">
     <div class="step-seg bg-brass"></div>
     <div class="step-seg bg-black/10 dark:bg-white/10"></div>
@@ -62,137 +63,122 @@
 
   <main class="flex-1 px-5">
 
-    <!-- بارکردن -->
     <div id="loadingView" class="flex flex-col items-center justify-center py-24 gap-3">
       <div class="w-10 h-10 border-4 border-brass border-t-transparent rounded-full animate-spin"></div>
-      <div class="text-sm text-[#6b6259] dark:text-[#8A7F72]">چاوەڕێ بە...</div>
+      <div class="text-base text-[#6b6259] dark:text-[#8A7F72]">چاوەڕێ بە...</div>
     </div>
 
-    <!-- هەڵە -->
     <div id="errorView" class="hidden text-center py-20">
-      <div class="text-4xl mb-3">⚠️</div>
-      <div id="errorText" class="text-barberred font-semibold"></div>
+      <div class="text-5xl mb-3">⚠️</div>
+      <div id="errorText" class="text-barberred font-semibold text-base"></div>
     </div>
 
-    <!-- بانەری نۆرەی ماوە -->
     <div id="upcomingBanner" class="hidden mb-4 rounded-2xl bg-white dark:bg-panel border border-brass/40 p-4 shadow-sm">
-      <div class="flex items-center gap-2 text-brass font-bold text-sm mb-1">
+      <div class="flex items-center gap-2 text-brass font-bold text-base mb-1">
         <span>🎫</span><span>نۆرەیەکی چاوەڕوانت هەیە</span>
       </div>
-      <div id="upcomingText" class="text-sm"></div>
-      <button id="cancelUpcomingBtn" class="tap mt-3 text-xs text-barberred font-semibold">هەڵوەشاندنەوەی ئەم نۆرەیە</button>
+      <div id="upcomingText" class="text-base"></div>
+      <button id="cancelUpcomingBtn" class="tap mt-3 text-sm text-barberred font-semibold">هەڵوەشاندنەوەی ئەم نۆرەیە</button>
     </div>
 
     <!-- ١) ناو و ژمارە -->
     <section id="step1" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">بەخێربێیت 👋</h2>
-      <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-5">تکایە زانیارییەکانت بنووسە بۆ گرتنی نۆرە</p>
+      <h2 class="text-2xl font-extrabold mb-1">بەخێربێیت 👋</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">تکایە زانیارییەکانت بنووسە بۆ گرتنی نۆرە</p>
       <label class="block text-sm font-semibold mb-1.5">ناوی تەواو</label>
       <input id="inpName" type="text" placeholder="بۆ نموونە: ئاسۆ محەمەد"
         class="w-full rounded-xl px-4 py-3.5 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base">
       <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل</label>
       <input id="inpPhone" type="tel" inputmode="tel" placeholder="07XXXXXXXXX"
         class="w-full rounded-xl px-4 py-3.5 mb-6 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base" dir="ltr" style="text-align:right">
-      <button id="toStep2" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-base shadow-lg shadow-brass/20">بەردەوامبوون ←</button>
+      <button id="toStep2" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-brass/20">بەردەوامبوون ←</button>
     </section>
 
     <!-- ٢) سێرڤس -->
     <section id="step2" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">سێرڤسەکە هەڵبژێرە</h2>
-      <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-5">چ خزمەتگوزاریەکت دەوێت؟</p>
+      <h2 class="text-2xl font-extrabold mb-1">سێرڤسەکە هەڵبژێرە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">چ خزمەتگوزاریەکت دەوێت؟</p>
       <div id="serviceList" class="flex flex-col gap-3 mb-6"></div>
-      <button id="backTo1" class="tap w-full text-center py-2 text-sm text-[#6b6259] dark:text-[#8A7F72]">→ گەڕانەوە</button>
+      <button id="backTo1" class="tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]">→ گەڕانەوە</button>
     </section>
 
     <!-- ٣) ڕۆژی هەفتە -->
     <section id="step3" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">ڕۆژی هەفتە هەڵبژێرە</h2>
-      <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-5">لە کام ڕۆژدا دێیت؟</p>
+      <h2 class="text-2xl font-extrabold mb-1">ڕۆژی هەفتە هەڵبژێرە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">لە کام ڕۆژدا دێیت؟</p>
       <div id="weekdayGrid" class="grid grid-cols-2 gap-2.5 mb-6"></div>
-      <button class="backBtn tap w-full text-center py-2 text-sm text-[#6b6259] dark:text-[#8A7F72]" data-to="2">→ گەڕانەوە</button>
+      <div id="noWeekdays" class="hidden text-center py-8 text-base text-[#6b6259] dark:text-[#8A7F72]">ئەم سەرتاشە هێشتا ڕۆژی کاری دیاری نەکردووە 😕</div>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="2">→ گەڕانەوە</button>
     </section>
 
     <!-- ٤) کاتی ڕۆژ -->
     <section id="step4" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">کام کاتی ڕۆژ؟</h2>
-      <p id="chosenDateLabel" class="text-sm text-brass font-semibold mb-5"></p>
+      <h2 class="text-2xl font-extrabold mb-1">کام کاتی ڕۆژ؟</h2>
+      <p id="chosenDateLabel" class="text-base text-brass font-semibold mb-5"></p>
       <div id="periodGrid" class="grid grid-cols-2 gap-2.5 mb-6"></div>
-      <button class="backBtn tap w-full text-center py-2 text-sm text-[#6b6259] dark:text-[#8A7F72]" data-to="3">→ گەڕانەوە</button>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="3">→ گەڕانەوە</button>
     </section>
 
     <!-- ٥) کاتژمێر -->
     <section id="step5" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">کاتژمێرەکە هەڵبژێرە</h2>
-      <p id="chosenDateLabel2" class="text-sm text-brass font-semibold mb-4"></p>
-      <div id="slotsLoading" class="text-center py-10 text-sm text-[#6b6259] dark:text-[#8A7F72]">گەڕان بەدوای کاتی بەتاڵ...</div>
+      <h2 class="text-2xl font-extrabold mb-1">کاتژمێرەکە هەڵبژێرە</h2>
+      <p id="chosenDateLabel2" class="text-base text-brass font-semibold mb-4"></p>
+      <div id="slotsLoading" class="text-center py-10 text-base text-[#6b6259] dark:text-[#8A7F72]">گەڕان بەدوای کاتی بەتاڵ...</div>
       <div id="slotsGrid" class="grid grid-cols-3 gap-2.5 mb-4"></div>
       <div id="noSlots" class="hidden text-center py-8">
         <div class="text-3xl mb-2">😕</div>
-        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">هیچ کاتێکی بەتاڵ نییە لەم ماوەیەدا</div>
-        <button id="nextWeekBtn" class="tap text-sm text-brass font-bold">سەیری هەفتەی داهاتوو بکە ←</button>
+        <div class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-4">هیچ کاتێکی بەتاڵ نییە لەم ماوەیەدا</div>
+        <button id="nextWeekBtn" class="tap text-base text-brass font-bold">سەیری هەفتەی داهاتوو بکە ←</button>
       </div>
-      <button class="backBtn tap w-full text-center py-2 text-sm text-[#6b6259] dark:text-[#8A7F72]" data-to="4">→ گەڕانەوە</button>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="4">→ گەڕانەوە</button>
     </section>
 
     <!-- پشتڕاستکردنەوە -->
     <section id="stepConfirm" class="app-step hidden">
-      <h2 class="text-xl font-extrabold mb-1">پشتڕاستکردنەوەی نۆرە</h2>
-      <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-5">تکایە زانیارییەکان پشکنین بکە</p>
+      <h2 class="text-2xl font-extrabold mb-1">پشتڕاستکردنەوەی نۆرە</h2>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-5">تکایە زانیارییەکان پشکنین بکە</p>
       <div class="rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 overflow-hidden mb-6 shadow-sm">
         <div class="pole-strip h-2"></div>
-        <div class="p-5 space-y-3 text-sm" id="confirmDetails"></div>
+        <div class="p-5 space-y-3 text-base" id="confirmDetails"></div>
       </div>
-      <button id="confirmBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-base shadow-lg shadow-brass/20 mb-2">✓ دڵنیام، نۆرەکە بگرە</button>
-      <button class="backBtn tap w-full text-center py-2 text-sm text-[#6b6259] dark:text-[#8A7F72]" data-to="5">→ گەڕانەوە</button>
+      <button id="confirmBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-brass/20 mb-2">✓ دڵنیام، نۆرەکە بگرە</button>
+      <button class="backBtn tap w-full text-center py-2.5 text-base text-[#6b6259] dark:text-[#8A7F72]" data-to="5">→ گەڕانەوە</button>
     </section>
 
     <!-- سەرکەوتوو -->
     <section id="stepSuccess" class="app-step hidden text-center">
       <div class="text-6xl mb-4">🎉</div>
       <h2 class="text-2xl font-extrabold mb-2">نۆرەکەت گیرا!</h2>
-      <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-6">لە کاتی دیاریکراودا خۆت پێشکەش بکە</p>
+      <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-6">لە کاتی دیاریکراودا خۆت پێشکەش بکە</p>
       <div class="rounded-2xl bg-white dark:bg-panel border border-brass/40 overflow-hidden mb-6 shadow-sm text-right">
         <div class="pole-strip h-2"></div>
-        <div class="p-5 space-y-3 text-sm" id="successDetails"></div>
+        <div class="p-5 space-y-3 text-base" id="successDetails"></div>
       </div>
-      <button id="newBookingBtn" class="tap w-full bg-transparent border-2 border-brass text-brass font-extrabold py-3.5 rounded-xl text-sm">نۆرەیەکی تر بگرە</button>
+      <button id="newBookingBtn" class="tap w-full bg-transparent border-2 border-brass text-brass font-extrabold py-3.5 rounded-xl text-base">نۆرەیەکی تر بگرە</button>
     </section>
 
   </main>
 </div>
 
 <script>
-// =====================================================================
-//  ڕێکخستن — تکایە لینکی Web App ـی GAS لێرە بنووسە دوای Deploy کردن
-// =====================================================================
-const CONFIG = { GAS_URL: 'https://script.google.com/macros/s/AKfycbzl1dMgrQPr5cdpERsXCF1OfP14437-2HrPbaSr-RoiEqvkC4ydK6P6O8FErtesXOyq/exec' };
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const params = new URLSearchParams(location.search);
 const barberId = params.get('b');
 
 const WEEKDAY_LABELS = ['یەکشەممە','دووشەممە','سێشەممە','چوارشەممە','پێنجشەممە','هەینی','شەممە'];
-const WEEKDAY_ORDER  = [6,0,1,2,3,4,5]; // شەممە یەکەم ڕۆژی هەفتەیە
-const PERIODS = [
-  { id:'morning', label:'بەیانی', icon:'🌅', from:6*60,  to:12*60 },
-  { id:'noon',    label:'نیوەڕۆ', icon:'☀️', from:12*60, to:17*60 },
-  { id:'evening', label:'ئێوارە', icon:'🌆', from:17*60, to:24*60 },
-  { id:'all',     label:'هەموو ڕۆژ', icon:'🕐', from:0,   to:24*60 },
+const WEEKDAY_ORDER  = [6,0,1,2,3,4,5];
+const PERIOD_DEFS = [
+  { id:'morning',   label:'بەیانی', icon:'🌅', enabledKey:'morning_enabled',   startKey:'morning_start',   endKey:'morning_end' },
+  { id:'afternoon', label:'نیوەڕۆ', icon:'☀️', enabledKey:'afternoon_enabled', startKey:'afternoon_start', endKey:'afternoon_end' },
+  { id:'evening',   label:'ئێوارە', icon:'🌆', enabledKey:'evening_enabled',   startKey:'evening_start',   endKey:'evening_end' },
 ];
 
 let barberInfo = null;
-let state = { name:'', phone:'', serviceId:null, weekday:null, weekOffset:0, date:null, period:'all', time:null };
-
-// ---------- API ----------
-async function api(action, data) {
-  const res = await fetch(CONFIG.GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // بۆ ڕێگریکردن لە CORS preflight
-    body: JSON.stringify({ action, data })
-  });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'هەڵەیەک ڕوویدا');
-  return json.result;
-}
+let servicesCache = [];
+let workingHoursCache = [];
+let blockedDatesCache = [];
+let state = { name:'', phone:'', serviceId:null, weekday:null, weekOffset:0, date:null, period:null, time:null };
 
 // ---------- تیم ----------
 function applyTheme(t){
@@ -200,9 +186,7 @@ function applyTheme(t){
   document.getElementById('themeToggle').textContent = t==='dark' ? '☀️' : '🌙';
   localStorage.setItem('theme', t);
 }
-(function initTheme(){
-  applyTheme(localStorage.getItem('theme') || 'dark'); // بنەڕەت: دۆخی تاریک بۆ ئاسانی چاو
-})();
+(function initTheme(){ applyTheme(localStorage.getItem('theme') || 'dark'); })();
 document.getElementById('themeToggle').onclick = () => {
   applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 };
@@ -234,11 +218,23 @@ document.querySelectorAll('.backBtn').forEach(b=>{
 async function init(){
   if (!barberId) { showError('ئەم لینکە تەواو نییە. تکایە لینکی QR یان لینکی سەرتاشەکە بەکاربهێنە.'); return; }
   try {
-    barberInfo = await api('getBarberPublicInfo', { barberId });
-    document.getElementById('shopName').textContent = barberInfo.shopName;
+    const { data: infoRows, error: infoErr } = await supabase.rpc('rpc_get_barber_public_info', { p_barber_id: barberId });
+    if (infoErr) throw infoErr;
+    barberInfo = infoRows && infoRows[0];
+    if (!barberInfo || !barberInfo.active) { showError('ئەم سەرتاشە بەردەست نییە.'); return; }
+    document.getElementById('shopName').textContent = barberInfo.shop_name;
+
+    const [{ data: svcData }, { data: whData }, { data: bdData }] = await Promise.all([
+      supabase.from('services').select('*').eq('barber_id', barberId).order('created_at'),
+      supabase.from('working_hours').select('*').eq('barber_id', barberId),
+      supabase.from('blocked_dates').select('*').eq('barber_id', barberId)
+    ]);
+    servicesCache = svcData || [];
+    workingHoursCache = whData || [];
+    blockedDatesCache = bdData || [];
+
     renderServices();
     renderWeekdays();
-    renderPeriods();
 
     const cust = getCustomer();
     if (cust && cust.customerId) {
@@ -246,8 +242,8 @@ async function init(){
       document.getElementById('inpName').value = cust.name;
       document.getElementById('inpPhone').value = cust.phone;
       try {
-        const upcoming = await api('getCustomerUpcoming', { barberId, customerId: cust.customerId });
-        if (upcoming) showUpcoming(upcoming, cust.customerId);
+        const { data: up } = await supabase.rpc('rpc_get_customer_upcoming', { p_barber_id: barberId, p_customer_id: cust.customerId });
+        if (up && up[0]) showUpcoming(up[0], cust.customerId);
       } catch(e) {}
     }
 
@@ -267,10 +263,10 @@ function showUpcoming(b, customerId){
   const el = document.getElementById('upcomingBanner');
   el.classList.remove('hidden');
   document.getElementById('upcomingText').textContent =
-    `${b.serviceName} — ${weekdayName(b.date)} ${b.date} — کاتژمێر ${b.time}`;
+    `${b.service_name} — ${weekdayName(b.date)} ${b.date} — کاتژمێر ${String(b.time).substring(0,5)}`;
   document.getElementById('cancelUpcomingBtn').onclick = async () => {
     if (!confirm('دڵنیایت لە هەڵوەشاندنەوەی نۆرەکەت؟')) return;
-    await api('cancelByCustomer', { bookingId: b.bookingId, customerId });
+    await supabase.rpc('rpc_cancel_by_customer', { p_booking_id: b.booking_id, p_customer_id: customerId });
     el.classList.add('hidden');
   };
 }
@@ -294,38 +290,45 @@ document.getElementById('backTo1').onclick = () => showStep('step1');
 function renderServices(){
   const wrap = document.getElementById('serviceList');
   wrap.innerHTML = '';
-  barberInfo.services.forEach(s=>{
+  servicesCache.forEach(s=>{
     const card = document.createElement('button');
     card.className = 'tap w-full text-right rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel p-4 flex items-center justify-between svc-card';
     card.innerHTML = `
       <div>
-        <div class="font-bold">${s.name}</div>
-        <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-1">${s.duration} خولەک</div>
+        <div class="font-bold text-base">${esc(s.name)}</div>
+        <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-1">${s.duration} خولەک</div>
       </div>
-      <div class="text-brass font-extrabold">${s.price} د.ع</div>`;
+      <div class="text-brass font-extrabold text-base">${s.price!=null ? s.price+' د.ع' : ''}</div>`;
     card.onclick = () => {
       document.querySelectorAll('.svc-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
       card.classList.add('ring-2','ring-brass');
-      state.serviceId = s.serviceId;
+      state.serviceId = s.id;
       setTimeout(()=>showStep('step3'), 150);
     };
     wrap.appendChild(card);
   });
 }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ---------- ستێپ ٣: ڕۆژی هەفتە ----------
 function renderWeekdays(){
   const wrap = document.getElementById('weekdayGrid');
   wrap.innerHTML = '';
-  WEEKDAY_ORDER.forEach(wd=>{
+  const workingDays = WEEKDAY_ORDER.filter(wd => {
+    const wh = workingHoursCache.find(w=>w.weekday===wd);
+    return wh && wh.is_working;
+  });
+  document.getElementById('noWeekdays').classList.toggle('hidden', workingDays.length>0);
+  workingDays.forEach(wd=>{
     const btn = document.createElement('button');
-    btn.className = 'tap wd-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-4 font-bold text-sm';
+    btn.className = 'tap wd-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-4 font-bold text-base';
     btn.textContent = WEEKDAY_LABELS[wd];
     btn.onclick = () => {
       document.querySelectorAll('.wd-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
       btn.classList.add('ring-2','ring-brass');
       state.weekday = wd; state.weekOffset = 0;
       computeDate();
+      renderPeriods();
       showStep('step4');
     };
     wrap.appendChild(btn);
@@ -335,17 +338,12 @@ function renderWeekdays(){
 function computeDate(){
   const today = new Date();
   let diff = (state.weekday - today.getDay() + 7) % 7;
-  if (diff === 0 && state.weekOffset === 0) {
-    // ئەگەر هەمان ڕۆژی ئەمڕۆیە، بیهێڵەرەوە بۆ ئەمڕۆ (پاشتر کاتی بەتاڵ پشکنین دەکرێت)
-    diff = 0;
-  }
   const d = new Date(today);
   d.setDate(d.getDate() + diff + (state.weekOffset*7));
   state.date = fmt(d);
 
-  // پشکنینی ڕۆژی پشوو، ئەگەر پشوو بوو بچۆرە هەفتەی داهاتوو
   let guard = 0;
-  while (barberInfo.blockedDates.some(bd=>bd.date===state.date) && guard < 8) {
+  while (blockedDatesCache.some(bd=>bd.date===state.date) && guard < 8) {
     const dd = new Date(state.date + 'T00:00:00');
     dd.setDate(dd.getDate()+7);
     state.date = fmt(dd);
@@ -360,14 +358,19 @@ function fmt(d){
   return `${y}-${m}-${day}`;
 }
 
-// ---------- ستێپ ٤: کاتی ڕۆژ ----------
+// ---------- ستێپ ٤: کاتی ڕۆژ (دیناميک، بەپێی کاتەکانی سەرتاشەکە) ----------
+function currentWorkingHours(){
+  return workingHoursCache.find(w=>w.weekday===state.weekday);
+}
 function renderPeriods(){
   const wrap = document.getElementById('periodGrid');
   wrap.innerHTML = '';
-  PERIODS.forEach(p=>{
+  const wh = currentWorkingHours();
+  const active = PERIOD_DEFS.filter(p => wh && wh[p.enabledKey] && wh[p.startKey] && wh[p.endKey]);
+  active.forEach(p=>{
     const btn = document.createElement('button');
-    btn.className = 'tap pr-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-5 font-bold text-sm flex flex-col items-center gap-1.5';
-    btn.innerHTML = `<span class="text-2xl">${p.icon}</span><span>${p.label}</span>`;
+    btn.className = 'tap pr-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-5 font-bold text-base flex flex-col items-center gap-1.5';
+    btn.innerHTML = `<span class="text-2xl">${p.icon}</span><span>${p.label}</span><span class="text-xs text-[#6b6259] dark:text-[#8A7F72]" dir="ltr">${wh[p.startKey].substring(0,5)}–${wh[p.endKey].substring(0,5)}</span>`;
     btn.onclick = async () => {
       document.querySelectorAll('.pr-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
       btn.classList.add('ring-2','ring-brass');
@@ -386,19 +389,24 @@ async function loadSlots(){
   document.getElementById('slotsGrid').innerHTML = '';
   document.getElementById('noSlots').classList.add('hidden');
   try {
-    const all = await api('getAvailableSlots', { barberId, date: state.date, serviceId: state.serviceId });
-    const period = PERIODS.find(p=>p.id===state.period);
-    const filtered = all.filter(t=>{
-      const m = toMin(t);
-      return m >= period.from && m < period.to;
+    const { data: all, error } = await supabase.rpc('rpc_get_available_slots', {
+      p_barber_id: barberId, p_date: state.date, p_service_id: state.serviceId
     });
+    if (error) throw error;
+    const wh = currentWorkingHours();
+    const p = PERIOD_DEFS.find(x=>x.id===state.period);
+    const from = toMin(wh[p.startKey]), to = toMin(wh[p.endKey]);
+    const filtered = (all||[]).filter(t=>{
+      const m = toMin(t);
+      return m >= from && m < to;
+    }).sort();
     document.getElementById('slotsLoading').classList.add('hidden');
     if (!filtered.length) { document.getElementById('noSlots').classList.remove('hidden'); return; }
     const grid = document.getElementById('slotsGrid');
     grid.classList.remove('hidden');
     filtered.forEach(t=>{
       const btn = document.createElement('button');
-      btn.className = 'tap time-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-3 font-bold text-sm';
+      btn.className = 'tap time-card rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-panel py-3 font-bold text-base';
       btn.textContent = t;
       btn.onclick = () => {
         document.querySelectorAll('.time-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
@@ -414,7 +422,7 @@ async function loadSlots(){
     alert(e.message);
   }
 }
-function toMin(t){ const p=t.split(':'); return Number(p[0])*60+Number(p[1]); }
+function toMin(t){ const p=String(t).split(':'); return Number(p[0])*60+Number(p[1]); }
 document.getElementById('nextWeekBtn').onclick = async () => {
   state.weekOffset += 1;
   computeDate();
@@ -423,10 +431,10 @@ document.getElementById('nextWeekBtn').onclick = async () => {
 
 // ---------- پشتڕاستکردنەوە ----------
 function renderConfirm(){
-  const svc = barberInfo.services.find(s=>s.serviceId===state.serviceId);
+  const svc = servicesCache.find(s=>s.id===state.serviceId);
   document.getElementById('confirmDetails').innerHTML = row('👤','ناو', state.name) + row('📱','ژمارە', state.phone) +
     row('✂️','سێرڤس', svc.name) + row('📅','بەروار', weekdayName(state.date)+' — '+state.date) +
-    row('🕐','کاتژمێر', state.time) + row('💵','نرخ', svc.price+' د.ع');
+    row('🕐','کاتژمێر', state.time) + row('💵','نرخ', svc.price!=null ? svc.price+' د.ع' : 'دیارینەکراو');
 }
 function row(icon,label,val){
   return `<div class="flex items-center justify-between"><span class="text-[#6b6259] dark:text-[#8A7F72]">${icon} ${label}</span><span class="font-bold">${val}</span></div>`;
@@ -438,11 +446,12 @@ document.getElementById('confirmBtn').onclick = async () => {
   try {
     let cust = getCustomer();
     const customerId = (cust && cust.customerId) ? cust.customerId : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-    const res = await api('createBooking', {
-      barberId, customerId, name: state.name, phone: state.phone,
-      serviceId: state.serviceId, date: state.date, time: state.time
+    const { error } = await supabase.rpc('rpc_create_booking', {
+      p_barber_id: barberId, p_customer_id: customerId, p_name: state.name, p_phone: state.phone,
+      p_service_id: state.serviceId, p_date: state.date, p_time: state.time
     });
-    saveCustomer({ customerId: res.customerId || customerId, name: state.name, phone: state.phone });
+    if (error) throw error;
+    saveCustomer({ customerId, name: state.name, phone: state.phone });
     renderSuccess();
     showStep('stepSuccess');
   } catch(e) {
@@ -453,13 +462,13 @@ document.getElementById('confirmBtn').onclick = async () => {
 };
 
 function renderSuccess(){
-  const svc = barberInfo.services.find(s=>s.serviceId===state.serviceId);
+  const svc = servicesCache.find(s=>s.id===state.serviceId);
   document.getElementById('successDetails').innerHTML = row('✂️','سێرڤس', svc.name) +
     row('📅','بەروار', weekdayName(state.date)+' — '+state.date) + row('🕐','کاتژمێر', state.time) +
-    row('🏪','شوێن', barberInfo.shopName);
+    row('🏪','شوێن', barberInfo.shop_name);
 }
 document.getElementById('newBookingBtn').onclick = () => {
-  state = { name: state.name, phone: state.phone, serviceId:null, weekday:null, weekOffset:0, date:null, period:'all', time:null };
+  state = { name: state.name, phone: state.phone, serviceId:null, weekday:null, weekOffset:0, date:null, period:null, time:null };
   document.querySelectorAll('.svc-card,.wd-card,.pr-card,.time-card').forEach(c=>c.classList.remove('ring-2','ring-brass'));
   showStep('step2');
 };

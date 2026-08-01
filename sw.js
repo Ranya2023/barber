@@ -1,9 +1,10 @@
-// سێرڤس وۆرکەر — هەڵگرتنی پەڕەکان بۆ کارکردن بەبێ ئینتەرنێت (شێوەکار + دوایین داتای هاوکاتکراو)
-const CACHE = 'barber-app-v1';
+// سێرڤس وۆرکەر — هەڵگرتنی پەڕەکان بۆ کارکردن بەبێ ئینتەرنێت (شێوەکار)
+const CACHE = 'barber-app-v2';
 const ASSETS = [
   './dashboard.html',
   './booking.html',
   './admin.html',
+  './config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -23,7 +24,8 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // پۆستەکان (بانگکردنی API) بەبێ دەستکاری دەردەچن — تەنها GET ی ناوخۆیی cache دەکرێت
+  // تەنها داواکاری GET ی ناوخۆیی cache دەکرێت. داواکاریە API ـەکانی Supabase
+  // (بۆ دۆمەینێکی جیاواز دەچن) هەرگیز cache ناکرێن — هەمیشە ڕاستەوخۆ لە ئینتەرنێتەوە دێن.
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith(self.location.origin)) return;
 

@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
 <script>
   tailwind.config = {
     darkMode: 'class',
@@ -20,44 +22,61 @@
   }
 </script>
 <style>
+  html { font-size: 18px; -webkit-tap-highlight-color: transparent; }
   * { font-family: 'Vazirmatn', sans-serif; }
+  body { -webkit-text-size-adjust: 100%; }
   .pole-strip { background: repeating-linear-gradient(-45deg, #F7F3EC 0 10px, #B33A3A 10px 20px, #F7F3EC 20px 30px, #C9A356 30px 40px); }
   .tap { transition: transform .08s ease; } .tap:active { transform: scale(.96); }
   .modal-bg { backdrop-filter: blur(3px); }
   ::-webkit-scrollbar { display:none; }
+  input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid #C9A356; outline-offset: 2px; }
 </style>
 </head>
 <body class="min-h-screen bg-[#F7F3EC] dark:bg-inkbg text-[#1B1714] dark:text-[#F7F3EC] transition-colors">
 
-<div id="loginView" class="min-h-screen flex flex-col items-center justify-center px-6">
-  <div class="w-14 h-14 rounded-2xl pole-strip shadow-lg mb-4 border border-black/10"></div>
-  <h1 class="text-2xl font-extrabold mb-1">پەڕەی ئەدمین</h1>
-  <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-8">بەڕێوەبردنی هەژماری سەرتاشەکان</p>
+<div id="loginView" class="min-h-screen flex flex-col items-center justify-center px-6" style="padding-top: env(safe-area-inset-top);">
+  <div class="w-16 h-16 rounded-2xl pole-strip shadow-lg mb-4 border border-black/10"></div>
+  <h1 class="text-3xl font-extrabold mb-1">پەڕەی ئەدمین</h1>
+  <p class="text-base text-[#6b6259] dark:text-[#8A7F72] mb-8">بەڕێوەبردنی هەژماری سەرتاشەکان</p>
   <div class="w-full max-w-sm">
-    <label class="block text-sm font-semibold mb-1.5">وشەی نهێنی ئەدمین</label>
+    <label class="block text-sm font-semibold mb-1.5">ئیمەیل</label>
+    <input id="loginEmail" type="email" dir="ltr" placeholder="you@example.com"
+      class="w-full rounded-xl px-4 py-3.5 mb-4 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base text-right">
+    <label class="block text-sm font-semibold mb-1.5">وشەی نهێنی</label>
     <input id="loginPassword" type="password" dir="ltr" placeholder="••••••••"
       class="w-full rounded-xl px-4 py-3.5 mb-2 bg-white dark:bg-panel border border-black/10 dark:border-white/10 outline-none focus:border-brass text-base text-right">
     <div id="loginError" class="hidden text-barberred text-sm mb-3"></div>
-    <button id="loginBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-base shadow-lg shadow-brass/20 mt-4">چوونەژوورەوە</button>
+    <button id="loginBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-brass/20 mt-4">چوونەژوورەوە</button>
   </div>
 </div>
 
 <div id="appView" class="hidden max-w-md mx-auto min-h-screen px-5 pb-16" style="padding-top: env(safe-area-inset-top);">
   <header class="flex items-center justify-between py-5">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-full pole-strip shadow-inner border border-black/10"></div>
-      <div class="font-extrabold">بەڕێوەبردنی سەرتاشەکان</div>
+      <div class="w-10 h-10 rounded-full pole-strip shadow-inner border border-black/10"></div>
+      <div class="font-extrabold text-lg">بەڕێوەبردنی سەرتاشەکان</div>
     </div>
-    <button id="themeToggle" class="tap w-10 h-10 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-lg border border-black/5 dark:border-white/10">🌙</button>
+    <button id="themeToggle" class="tap w-11 h-11 rounded-full bg-white dark:bg-panel shadow flex items-center justify-center text-xl border border-black/5 dark:border-white/10">🌙</button>
   </header>
 
-  <button id="addBarberBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl mb-5 text-sm">+ زیادکردنی سەرتاشی نوێ</button>
+  <button id="newCodeBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-4 rounded-xl mb-3 text-base shadow-lg shadow-brass/20">🎟️ دروستکردنی کۆدی بانگهێشتن</button>
+  <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-6">ئەم کۆدە بدە بە سەرتاشی نوێ، ئەویش خۆی هەژمار دروست دەکات و ئیمەیل/وشەی نهێنی خۆی هەڵدەبژێرێت.</p>
 
-  <div id="barberList" class="flex flex-col gap-3"></div>
-  <div id="barberEmpty" class="hidden text-center py-16 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ سەرتاشێک زیاد نەکراوە</div>
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-extrabold">سەرتاشەکان</h2>
+    <span id="barberCount" class="text-sm text-[#6b6259] dark:text-[#8A7F72]"></span>
+  </div>
+  <div id="barberList" class="flex flex-col gap-3 mb-8"></div>
+  <div id="barberEmpty" class="hidden text-center py-16 text-base text-[#6b6259] dark:text-[#8A7F72]">هێشتا هیچ سەرتاشێک خۆی تۆمار نەکردووە 🙂</div>
 
-  <button id="changePwBtn" class="tap w-full border border-black/10 dark:border-white/10 text-sm font-bold py-3 rounded-xl mt-8">گۆڕینی وشەی نهێنی ئەدمین</button>
-  <button id="logoutBtn" class="tap w-full border-2 border-barberred text-barberred font-extrabold py-3 rounded-xl mt-3 text-sm">دەرچوون</button>
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-extrabold">کۆدە چاوەڕوانەکان</h2>
+  </div>
+  <div id="codeList" class="flex flex-col gap-2 mb-8"></div>
+  <div id="codeEmpty" class="hidden text-center py-8 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ کۆدێکی چاوەڕوان نییە</div>
+
+  <button id="changePwBtn" class="tap w-full border border-black/10 dark:border-white/10 text-base font-bold py-3.5 rounded-xl mt-4">گۆڕینی وشەی نهێنی</button>
+  <button id="logoutBtn" class="tap w-full border-2 border-barberred text-barberred font-extrabold py-3.5 rounded-xl mt-3 text-base">دەرچوون</button>
 </div>
 
 <div id="modalRoot" class="hidden fixed inset-0 z-50 modal-bg bg-black/40 flex items-end sm:items-center justify-center">
@@ -69,15 +88,8 @@
 <div id="toastRoot" class="fixed bottom-6 inset-x-0 flex justify-center z-[60] pointer-events-none"></div>
 
 <script>
-const CONFIG = { GAS_URL: 'https://script.google.com/macros/s/AKfycbzl1dMgrQPr5cdpERsXCF1OfP14437-2HrPbaSr-RoiEqvkC4ydK6P6O8FErtesXOyq/exec' };
-let adminToken = localStorage.getItem('adminToken');
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function api(action, data) {
-  const res = await fetch(CONFIG.GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action,data}) });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'هەڵەیەک ڕوویدا');
-  return json.result;
-}
 function toast(msg, isError) {
   const el = document.createElement('div');
   el.className = `pointer-events-auto ${isError?'bg-barberred':'bg-inkbg dark:bg-brass'} ${isError?'text-white':'text-white dark:text-inkbg'} text-sm font-bold px-4 py-2.5 rounded-full shadow-lg mb-2`;
@@ -95,67 +107,148 @@ function openModal(html){ document.getElementById('modalBody').innerHTML = html;
 function closeModal(){ document.getElementById('modalRoot').classList.add('hidden'); }
 document.getElementById('modalRoot').addEventListener('click', e=>{ if(e.target.id==='modalRoot') closeModal(); });
 
+// =====================================================================
+//  چوونەژوورەوە
+// =====================================================================
 document.getElementById('loginBtn').onclick = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
   errEl.classList.add('hidden');
-  if (!password) { errEl.textContent='تکایە وشەی نهێنی بنووسە'; errEl.classList.remove('hidden'); return; }
+  if (!email || !password) { errEl.textContent='تکایە ئیمەیل و وشەی نهێنی بنووسە'; errEl.classList.remove('hidden'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const res = await api('adminLogin', { password });
-    adminToken = res.token;
-    localStorage.setItem('adminToken', adminToken);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    const { data: isAdmin } = await supabase.rpc('is_admin');
+    if (!isAdmin) {
+      await supabase.auth.signOut();
+      throw new Error('ئەم هەژمارە ڕێگەی چوونەژوورەوەی ئەدمینی نییە');
+    }
     startApp();
-  } catch(e) { errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+  } catch(e) {
+    errEl.textContent = e.message; errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = 'چوونەژوورەوە';
+  }
 };
-document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('adminToken'); location.reload(); };
+document.getElementById('logoutBtn').onclick = async () => {
+  if (!confirm('دڵنیایت لە دەرچوون؟')) return;
+  await supabase.auth.signOut();
+  location.reload();
+};
 
+async function boot() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    const { data: isAdmin } = await supabase.rpc('is_admin');
+    if (isAdmin) { startApp(); return; }
+  }
+}
 function startApp(){
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('appView').classList.remove('hidden');
   loadBarbers();
+  loadCodes();
 }
-(function boot(){ if (adminToken) startApp(); })();
+boot();
 
-let barbers = [];
-async function loadBarbers(){
-  try {
-    barbers = await api('adminListBarbers', { token: adminToken });
-    render();
-  } catch(e) {
-    if (String(e.message).includes('دەستپێنەگەیشتن')) { localStorage.removeItem('adminToken'); location.reload(); }
-    else toast(e.message, true);
-  }
+// =====================================================================
+//  کۆدی بانگهێشتن
+// =====================================================================
+function genCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i=0;i<8;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
 }
-function render(){
+document.getElementById('newCodeBtn').onclick = async () => {
+  const code = genCode();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('invite_codes').insert({ code, created_by: user.id });
+  if (error) { toast(error.message, true); return; }
+  loadCodes();
+  showCode(code);
+};
+function showCode(code){
+  const link = new URL('./dashboard.html', location.href).toString() + '?code=' + encodeURIComponent(code);
+  openModal(`
+    <h3 class="text-xl font-extrabold mb-1">🎟️ کۆدی نوێ دروستکرا</h3>
+    <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">ئەم لینکە یان کۆدە بدە بە سەرتاشەکە. خۆی ئیمەیل و وشەی نهێنی هەڵدەبژێرێت.</p>
+    <div class="rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-5 mb-3 text-center">
+      <div class="text-3xl font-extrabold tracking-widest text-brass" dir="ltr">${esc(code)}</div>
+    </div>
+    <div class="rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-3 mb-3 text-xs break-all" dir="ltr">${link}</div>
+    <img class="mx-auto rounded-xl mb-4 w-40 h-40 bg-white p-2" src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(link)}">
+    <button id="copyC" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl mb-2">کۆپیکردنی لینک</button>
+    <button id="closeC" class="tap w-full border border-black/10 dark:border-white/10 font-bold py-3 rounded-xl">داخستن</button>
+  `);
+  document.getElementById('copyC').onclick = async () => { await navigator.clipboard.writeText(link); toast('کۆپیکرا ✓'); };
+  document.getElementById('closeC').onclick = closeModal;
+}
+async function loadCodes(){
+  const { data, error } = await supabase.from('invite_codes').select('*').eq('used', false).order('created_at', { ascending:false });
+  if (error) return;
+  const list = document.getElementById('codeList');
+  list.innerHTML = '';
+  document.getElementById('codeEmpty').classList.toggle('hidden', (data||[]).length>0);
+  (data||[]).forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'flex items-center justify-between rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 px-4 py-3';
+    el.innerHTML = `
+      <span class="font-extrabold tracking-widest" dir="ltr">${esc(c.code)}</span>
+      <div class="flex gap-2">
+        <button class="tap text-xs font-bold px-2.5 py-1.5 rounded-lg bg-brass/15 text-brass showB">پیشاندان</button>
+        <button class="tap text-xs font-bold px-2.5 py-1.5 rounded-lg bg-barberred/10 text-barberred delB">✕ هەڵوەشاندنەوە</button>
+      </div>`;
+    el.querySelector('.showB').onclick = () => showCode(c.code);
+    el.querySelector('.delB').onclick = async () => {
+      if (!confirm('هەڵوەشاندنەوەی ئەم کۆدە؟')) return;
+      await supabase.from('invite_codes').delete().eq('code', c.code);
+      loadCodes();
+    };
+    list.appendChild(el);
+  });
+}
+
+// =====================================================================
+//  لیستی سەرتاشەکان
+// =====================================================================
+async function loadBarbers(){
+  const { data, error } = await supabase.from('barbers').select('*').order('created_at', { ascending:false });
+  if (error) { toast(error.message, true); return; }
+  render(data||[]);
+}
+function render(barbers){
   const list = document.getElementById('barberList');
   list.innerHTML = '';
+  document.getElementById('barberCount').textContent = barbers.length ? `${barbers.length} سەرتاش` : '';
   document.getElementById('barberEmpty').classList.toggle('hidden', barbers.length>0);
   barbers.forEach(b=>{
     const el = document.createElement('div');
     el.className = 'rounded-2xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4';
     el.innerHTML = `
-      <div class="flex items-start justify-between mb-2">
+      <div class="flex items-start justify-between mb-3">
         <div>
-          <div class="font-bold">${esc(b.shopName||b.name)}</div>
-          <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5" dir="ltr" style="text-align:right">${esc(b.email)}</div>
-          <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5">کاتی کار: ${b.workStart||'—'} - ${b.workEnd||'—'}</div>
+          <div class="font-bold text-base">${esc(b.shop_name||b.name)}</div>
+          <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mt-0.5">${esc(b.name)}</div>
+          <div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5" dir="ltr" style="text-align:right">${esc(b.email||'')}</div>
+          ${b.phone ? `<div class="text-xs text-[#6b6259] dark:text-[#8A7F72] mt-0.5" dir="ltr" style="text-align:right">${esc(b.phone)}</div>` : ''}
         </div>
-        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${b.active? 'bg-green-500/15 text-green-700 dark:text-green-400':'bg-black/10 dark:bg-white/10 text-[#6b6259]'}">${b.active?'چالاک':'ناچالاک'}</span>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full ${b.active? 'bg-green-500/15 text-green-700 dark:text-green-400':'bg-black/10 dark:bg-white/10 text-[#6b6259]'}">${b.active?'چالاک':'ناچالاک'}</span>
       </div>
       <div class="flex gap-2">
-        <button class="tap flex-1 bg-brass/15 text-brass font-bold py-2 rounded-lg text-xs editB">✎ دەستکاری</button>
-        <button class="tap flex-1 bg-barberred/10 text-barberred font-bold py-2 rounded-lg text-xs linkB">🔗 لینک</button>
-        <button class="tap flex-1 bg-black/5 dark:bg-white/5 font-bold py-2 rounded-lg text-xs delB">${b.active?'✕ ناچالاککردن':'↩ چالاککردن'}</button>
+        <button class="tap flex-1 bg-brass/15 text-brass font-bold py-2.5 rounded-lg text-sm editB">✎ دەستکاری</button>
+        <button class="tap flex-1 bg-barberred/10 text-barberred font-bold py-2.5 rounded-lg text-sm linkB">🔗 لینک</button>
+        <button class="tap flex-1 bg-black/5 dark:bg-white/5 font-bold py-2.5 rounded-lg text-sm delB">${b.active?'✕ ناچالاککردن':'↩ چالاککردن'}</button>
       </div>`;
     el.querySelector('.editB').onclick = () => openBarberForm(b);
     el.querySelector('.linkB').onclick = () => showLink(b);
     el.querySelector('.delB').onclick = async () => {
-      if (b.active) {
-        if (!confirm(`دڵنیایت لە ناچالاککردنی هەژماری ${b.name}؟`)) return;
-        await api('adminDeleteBarber', { token: adminToken, barberId: b.barberId });
-      } else {
-        await api('adminUpdateBarber', { token: adminToken, barberId: b.barberId, name:b.name, shopName:b.shopName, email:b.email, active:true });
-      }
+      if (b.active && !confirm(`دڵنیایت لە ناچالاککردنی هەژماری ${b.name}؟ نۆرەکانی نامێنن بەڵام ناتوانێت بچێتە ژوورەوە.`)) return;
+      const { error } = await supabase.from('barbers').update({ active: !b.active }).eq('id', b.id);
+      if (error) return toast(error.message, true);
       toast('نوێکرایەوە ✓');
       loadBarbers();
     };
@@ -163,75 +256,34 @@ function render(){
   });
 }
 
-document.getElementById('addBarberBtn').onclick = () => openBarberForm(null);
-
 function openBarberForm(b){
   openModal(`
-    <h3 class="text-lg font-extrabold mb-4">${b?'دەستکاریکردنی':'زیادکردنی'} سەرتاش</h3>
+    <h3 class="text-xl font-extrabold mb-4">دەستکاریکردنی سەرتاش</h3>
     <label class="block text-sm font-semibold mb-1.5">ناوی سەرتاش</label>
-    <input id="mName" type="text" value="${b?esc(b.name):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <input id="mName" type="text" value="${esc(b.name)}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
     <label class="block text-sm font-semibold mb-1.5">ناوی دوکان</label>
-    <input id="mShop" type="text" value="${b?esc(b.shopName||''):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
-    <label class="block text-sm font-semibold mb-1.5">ئیمەیل</label>
-    <input id="mEmail" type="email" dir="ltr" value="${b?esc(b.email):''}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
-    <label class="block text-sm font-semibold mb-1.5">${b?'وشەی نهێنی نوێ (بەتاڵی بهێڵەرەوە ئەگەر نەتەوێت بیگۆڕیت)':'وشەی نهێنی'}</label>
-    <input id="mPass" type="text" dir="ltr" placeholder="${b?'••••••••':'وشەیەکی سادە دابنێ'}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
-    <div class="flex gap-3 mb-5">
-      <div class="flex-1">
-        <label class="block text-xs font-semibold mb-1.5">لە کاتژمێر</label>
-        <input id="mStart" type="time" dir="ltr" value="${b?b.workStart:'09:00'}" class="w-full rounded-xl px-3 py-2.5 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
-      </div>
-      <div class="flex-1">
-        <label class="block text-xs font-semibold mb-1.5">بۆ کاتژمێر</label>
-        <input id="mEnd" type="time" dir="ltr" value="${b?b.workEnd:'21:00'}" class="w-full rounded-xl px-3 py-2.5 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
-      </div>
-    </div>
+    <input id="mShop" type="text" value="${esc(b.shop_name||'')}" class="w-full rounded-xl px-4 py-3 mb-3 bg-white dark:bg-panel border border-black/10 dark:border-white/10">
+    <label class="block text-sm font-semibold mb-1.5">ژمارەی مۆبایل</label>
+    <input id="mPhone" type="tel" dir="ltr" value="${esc(b.phone||'')}" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
+    <p class="text-xs text-[#6b6259] dark:text-[#8A7F72] mb-5">ئیمەیل و وشەی نهێنی تەنها لەلایەن خودی سەرتاشەکەوە دەگۆڕدرێت.</p>
     <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
   `);
   document.getElementById('mSave').onclick = async () => {
     const name = document.getElementById('mName').value.trim();
-    const shopName = document.getElementById('mShop').value.trim() || name;
-    const email = document.getElementById('mEmail').value.trim();
-    const password = document.getElementById('mPass').value;
-    const workStart = document.getElementById('mStart').value;
-    const workEnd = document.getElementById('mEnd').value;
-    if (!name || !email || (!b && !password)) return toast('تکایە خانە پێویستەکان پڕبکەرەوە', true);
-    try {
-      if (b) {
-        await api('adminUpdateBarber', { token: adminToken, barberId: b.barberId, name, shopName, email, password, active: b.active, workStart, workEnd });
-        toast('نوێکرایەوە ✓');
-        closeModal();
-        loadBarbers();
-      } else {
-        const res = await api('adminCreateBarber', { token: adminToken, name, shopName, email, password, workStart, workEnd });
-        closeModal();
-        loadBarbers();
-        showCredentials(res);
-      }
-    } catch(e) { toast(e.message, true); }
+    const shop_name = document.getElementById('mShop').value.trim() || name;
+    const phone = document.getElementById('mPhone').value.trim();
+    if (!name) return toast('تکایە ناو بنووسە', true);
+    const { error } = await supabase.from('barbers').update({ name, shop_name, phone }).eq('id', b.id);
+    if (error) return toast(error.message, true);
+    toast('نوێکرایەوە ✓');
+    closeModal();
+    loadBarbers();
   };
 }
-
-function showCredentials(res){
-  const link = new URL('./booking.html', location.href).toString() + '?b=' + encodeURIComponent(res.barberId);
-  openModal(`
-    <h3 class="text-lg font-extrabold mb-1">✓ هەژمار دروستکرا</h3>
-    <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">ئەم زانیارییانە بدە بە سەرتاشەکە بۆ چوونەژوورەوە</p>
-    <div class="rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-4 mb-3 text-sm space-y-2" dir="ltr" style="text-align:right">
-      <div><b>ئیمەیل:</b> ${esc(res.email)}</div>
-      <div><b>وشەی نهێنی:</b> ${esc(res.password)}</div>
-    </div>
-    <div class="text-xs font-semibold mb-1.5">لینکی نۆرەگرتنی کڕیاران</div>
-    <div class="rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-3 mb-3 text-xs break-all" dir="ltr">${link}</div>
-    <img class="mx-auto rounded-xl mb-4 w-40 h-40 bg-white p-2" src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(link)}">
-    <button id="closeC" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">تەواو</button>
-  `);
-  document.getElementById('closeC').onclick = closeModal;
-}
 function showLink(b){
-  const link = new URL('./booking.html', location.href).toString() + '?b=' + encodeURIComponent(b.barberId);
+  const link = new URL('./booking.html', location.href).toString() + '?b=' + encodeURIComponent(b.id);
   openModal(`
-    <h3 class="text-lg font-extrabold mb-4">لینکی ${esc(b.name)}</h3>
+    <h3 class="text-xl font-extrabold mb-4">لینکی ${esc(b.name)}</h3>
     <div class="rounded-xl bg-white dark:bg-panel border border-black/10 dark:border-white/10 p-3 mb-4 text-xs break-all" dir="ltr">${link}</div>
     <img class="mx-auto rounded-xl mb-4 w-40 h-40 bg-white p-2" src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(link)}">
     <button id="copyL" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">کۆپیکردنی لینک</button>
@@ -239,16 +291,20 @@ function showLink(b){
   document.getElementById('copyL').onclick = async () => { await navigator.clipboard.writeText(link); toast('کۆپیکرا ✓'); };
 }
 
+// =====================================================================
+//  گۆڕینی وشەی نهێنی ئەدمین
+// =====================================================================
 document.getElementById('changePwBtn').onclick = () => {
   openModal(`
-    <h3 class="text-lg font-extrabold mb-4">گۆڕینی وشەی نهێنی ئەدمین</h3>
+    <h3 class="text-xl font-extrabold mb-4">گۆڕینی وشەی نهێنی</h3>
     <input id="mNewPw" type="text" dir="ltr" placeholder="وشەی نهێنی نوێ" class="w-full rounded-xl px-4 py-3 mb-5 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-right">
     <button id="mSave" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl">پاشەکەوتکردن</button>
   `);
   document.getElementById('mSave').onclick = async () => {
     const newPassword = document.getElementById('mNewPw').value;
-    if (!newPassword || newPassword.length < 4) return toast('لانیکەم ٤ پیت/ژمارە', true);
-    await api('adminChangePassword', { token: adminToken, newPassword });
+    if (!newPassword || newPassword.length < 6) return toast('لانیکەم ٦ پیت/ژمارە', true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return toast(error.message, true);
     toast('وشەی نهێنی گۆڕدرا ✓');
     closeModal();
   };
