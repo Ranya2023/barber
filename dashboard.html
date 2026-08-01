@@ -291,7 +291,7 @@
 <div id="toastRoot" class="fixed bottom-24 inset-x-0 flex justify-center z-[60] pointer-events-none"></div>
 
 <script>
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const WEEKDAY_LABELS = ['یەکشەممە','دووشەممە','سێشەممە','چوارشەممە','پێنجشەممە','هەینی','شەممە'];
 const WEEKDAY_ORDER  = [6,0,1,2,3,4,5];
@@ -365,7 +365,7 @@ document.getElementById('loginBtn').onclick = async () => {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     await afterLoginCheck();
   } catch (e) {
@@ -375,8 +375,8 @@ document.getElementById('loginBtn').onclick = async () => {
   }
 };
 async function afterLoginCheck(){
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: prof, error } = await supabase.from('barbers').select('*').eq('id', user.id).maybeSingle();
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: prof, error } = await sb.from('barbers').select('*').eq('id', user.id).maybeSingle();
   if (error || !prof) {
     // No barber row yet — this is expected right after confirming an email
     // link (registration was paused at step 2 for confirmation). If we still
@@ -384,7 +384,7 @@ async function afterLoginCheck(){
     // instead of kicking them out.
     const pendingCode = localStorage.getItem('pendingInviteCode');
     if (pendingCode) {
-      const { data: stillValid } = await supabase.rpc('rpc_validate_invite_code', { p_code: pendingCode });
+      const { data: stillValid } = await sb.rpc('rpc_validate_invite_code', { p_code: pendingCode });
       if (stillValid) {
         regState.code = pendingCode;
         document.getElementById('loginView').classList.add('hidden');
@@ -393,13 +393,13 @@ async function afterLoginCheck(){
         return;
       }
     }
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     const errEl = document.getElementById('loginError');
     errEl.textContent = 'ئەم هەژمارە وەک سەرتاش تۆمار نەکراوە'; errEl.classList.remove('hidden');
     return;
   }
   if (!prof.active) {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     const errEl = document.getElementById('loginError');
     errEl.textContent = 'هەژمارەکەت ناچالاککراوە، پەیوەندی بە بەڕێوەبەر بکە'; errEl.classList.remove('hidden');
     return;
@@ -409,7 +409,7 @@ async function afterLoginCheck(){
 }
 document.getElementById('logoutBtn').onclick = async () => {
   if (!confirm('دڵنیایت لە دەرچوون؟')) return;
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   location.reload();
 };
 
@@ -454,7 +454,7 @@ document.getElementById('rCodeNext').onclick = async () => {
   const btn = document.getElementById('rCodeNext');
   btn.disabled = true; btn.textContent = 'پشکنین...';
   try {
-    const { data: valid, error } = await supabase.rpc('rpc_validate_invite_code', { p_code: code });
+    const { data: valid, error } = await sb.rpc('rpc_validate_invite_code', { p_code: code });
     if (error) throw error;
     if (!valid) throw new Error('کۆدەکە هەڵەیە یان پێشتر بەکارهاتووە');
     regState.code = code;
@@ -479,7 +479,7 @@ document.getElementById('rAuthNext').onclick = async () => {
   const btn = document.getElementById('rAuthNext');
   btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await sb.auth.signUp({
       email, password: pass,
       options: { emailRedirectTo: location.origin + location.pathname }
     });
@@ -507,7 +507,7 @@ document.getElementById('rProfileNext').onclick = async () => {
   const btn = document.getElementById('rProfileNext');
   btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const { error } = await supabase.rpc('rpc_complete_barber_registration', {
+    const { error } = await sb.rpc('rpc_complete_barber_registration', {
       p_code: regState.code, p_name: name, p_shop_name: shop, p_phone: phone
     });
     if (error) throw error;
@@ -555,12 +555,12 @@ document.getElementById('rFinishBtn').onclick = async () => {
   const btn = document.getElementById('rFinishBtn');
   btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await sb.auth.getUser();
     if (rows.length) {
-      const { error } = await supabase.from('services').insert(rows.map(r => ({ ...r, barber_id: user.id })));
+      const { error } = await sb.from('services').insert(rows.map(r => ({ ...r, barber_id: user.id })));
       if (error) throw error;
     }
-    const { data: prof } = await supabase.from('barbers').select('*').eq('id', user.id).maybeSingle();
+    const { data: prof } = await sb.from('barbers').select('*').eq('id', user.id).maybeSingle();
     barberProfile = prof;
     document.getElementById('registerView').classList.add('hidden');
     startApp();
@@ -589,7 +589,7 @@ async function startApp() {
 }
 
 (async function boot() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session) await afterLoginCheck();
 })();
 
@@ -625,7 +625,7 @@ async function ensurePermanentOccurrences(date){
     status: 'چاوەڕوان',
     type: 'هەمیشەیی'
   }));
-  await supabase.from('bookings').upsert(rows, { onConflict: 'barber_id,permanent_client_id,date', ignoreDuplicates: true });
+  await sb.from('bookings').upsert(rows, { onConflict: 'barber_id,permanent_client_id,date', ignoreDuplicates: true });
 }
 
 function shiftDate(days) {
@@ -647,7 +647,7 @@ async function renderHome() {
   let offline = false;
   try {
     await ensurePermanentOccurrences(selectedDate);
-    const { data, error } = await supabase.from('bookings').select('*')
+    const { data, error } = await sb.from('bookings').select('*')
       .eq('barber_id', barberProfile.id).eq('date', selectedDate).order('time', { ascending:true });
     if (error) throw error;
     dayBookings = data || [];
@@ -790,7 +790,7 @@ function bookingCard(b) {
 
 async function setStatus(bookingId, status) {
   try {
-    const { error } = await supabase.from('bookings').update({ status }).eq('id', bookingId);
+    const { error } = await sb.from('bookings').update({ status }).eq('id', bookingId);
     if (error) throw error;
     toast('نوێکرایەوە ✓');
     renderHome();
@@ -812,7 +812,7 @@ function openReschedule(b) {
     const date = document.getElementById('mDate').value;
     const time = document.getElementById('mTime').value;
     if (!date || !time) return toast('تکایە بەروار و کاتژمێر دیاری بکە', true);
-    const { error } = await supabase.from('bookings').update({ date, time, status:'چاوەڕوان' }).eq('id', b.id);
+    const { error } = await sb.from('bookings').update({ date, time, status:'چاوەڕوان' }).eq('id', b.id);
     if (error) return toast(error.message, true);
     toast('کاتی نۆرە گۆڕدرا ✓');
     closeModal();
@@ -860,10 +860,10 @@ document.getElementById('addWalkInBtn').onclick = () => {
     suggestTimer = setTimeout(async () => {
       try {
         const [{ data: fromBookings }, { data: fromPerm }] = await Promise.all([
-          supabase.from('bookings').select('name,phone,service_name,created_at')
+          sb.from('bookings').select('name,phone,service_name,created_at')
             .eq('barber_id', barberProfile.id).ilike('name', q + '%')
             .order('created_at', { ascending: false }).limit(15),
-          supabase.from('permanent_clients').select('name,phone')
+          sb.from('permanent_clients').select('name,phone')
             .eq('barber_id', barberProfile.id).ilike('name', q + '%').limit(15)
         ]);
         const seen = new Set();
@@ -894,7 +894,7 @@ document.getElementById('addWalkInBtn').onclick = () => {
     const time = document.getElementById('mTime').value;
     if (!name || !time) return toast('تکایە ناو و کاتژمێر پڕبکەرەوە', true);
     const svc = servicesCache.find(s=>s.id===serviceId);
-    const { error } = await supabase.from('bookings').insert({
+    const { error } = await sb.from('bookings').insert({
       barber_id: barberProfile.id, name, phone, service_id: serviceId, service_name: svc?svc.name:'',
       duration: svc?svc.duration:30, date: selectedDate, time, status:'چاوەڕوان', type:'سەردانکەر'
     });
@@ -925,7 +925,7 @@ document.getElementById('downloadPngBtn').onclick = async () => {
 //  تابی کڕیارە هەمیشەییەکان
 // =====================================================================
 async function loadPermClients(){
-  const { data, error } = await supabase.from('permanent_clients').select('*').eq('barber_id', barberProfile.id).order('weekday');
+  const { data, error } = await sb.from('permanent_clients').select('*').eq('barber_id', barberProfile.id).order('weekday');
   if (!error) permClientsCache = data || [];
 }
 function renderPerm() {
@@ -952,7 +952,7 @@ function renderPerm() {
     el.querySelector('.editP').onclick = () => openPermForm(p);
     el.querySelector('.delP').onclick = async () => {
       if (!confirm('سڕینەوەی ئەم کڕیارە هەمیشەییە؟')) return;
-      const { error } = await supabase.from('permanent_clients').delete().eq('id', p.id);
+      const { error } = await sb.from('permanent_clients').delete().eq('id', p.id);
       if (error) return toast(error.message, true);
       toast('سڕایەوە ✓');
       await loadPermClients();
@@ -1006,8 +1006,8 @@ function openPermForm(p) {
     if (!name || !phone || !time || !pendingChain.length) return toast('تکایە هەموو خانەکان و زنجیرەی سێرڤس پڕبکەرەوە', true);
     const row = { barber_id: barberProfile.id, name, phone, weekday, time, service_chain: pendingChain };
     const { error } = p
-      ? await supabase.from('permanent_clients').update(row).eq('id', p.id)
-      : await supabase.from('permanent_clients').insert(row);
+      ? await sb.from('permanent_clients').update(row).eq('id', p.id)
+      : await sb.from('permanent_clients').insert(row);
     if (error) return toast(error.message, true);
     toast('پاشەکەوتکرا ✓');
     closeModal();
@@ -1020,7 +1020,7 @@ function openPermForm(p) {
 //  تابی سێرڤس
 // =====================================================================
 async function loadServices(){
-  const { data, error } = await supabase.from('services').select('*').eq('barber_id', barberProfile.id).order('created_at');
+  const { data, error } = await sb.from('services').select('*').eq('barber_id', barberProfile.id).order('created_at');
   if (!error) servicesCache = data || [];
 }
 function renderServices() {
@@ -1041,7 +1041,7 @@ function renderServices() {
     el.querySelector('.editS').onclick = () => openServiceForm(s);
     el.querySelector('.delS').onclick = async () => {
       if (!confirm('سڕینەوەی ئەم سێرڤسە؟')) return;
-      const { error } = await supabase.from('services').delete().eq('id', s.id);
+      const { error } = await sb.from('services').delete().eq('id', s.id);
       if (error) return toast(error.message, true);
       toast('سڕایەوە ✓');
       await loadServices();
@@ -1070,8 +1070,8 @@ function openServiceForm(s) {
     if (!name) return toast('تکایە ناوی سێرڤس بنووسە', true);
     const row = { barber_id: barberProfile.id, name, duration, price };
     const { error } = s
-      ? await supabase.from('services').update(row).eq('id', s.id)
-      : await supabase.from('services').insert(row);
+      ? await sb.from('services').update(row).eq('id', s.id)
+      : await sb.from('services').insert(row);
     if (error) return toast(error.message, true);
     toast('پاشەکەوتکرا ✓');
     closeModal();
@@ -1101,7 +1101,7 @@ function setupBookingLink() {
 //  تابی ڕێکخستن — کاتی کار per-day
 // =====================================================================
 async function loadWorkingHours(){
-  const { data, error } = await supabase.from('working_hours').select('*').eq('barber_id', barberProfile.id);
+  const { data, error } = await sb.from('working_hours').select('*').eq('barber_id', barberProfile.id);
   workingHoursCache = error ? [] : (data || []);
 }
 function periodRow(key, label, row){
@@ -1158,13 +1158,13 @@ function renderHoursEditor(){
 }
 document.getElementById('saveHoursBtn').onclick = async () => {
   const rows = workingHoursCache.map(r => ({ ...r, barber_id: barberProfile.id }));
-  const { error } = await supabase.from('working_hours').upsert(rows, { onConflict: 'barber_id,weekday' });
+  const { error } = await sb.from('working_hours').upsert(rows, { onConflict: 'barber_id,weekday' });
   if (error) return toast(error.message, true);
   toast('کاتەکان پاشەکەوتکران ✓');
 };
 
 async function loadBlockedDates(){
-  const { data, error } = await supabase.from('blocked_dates').select('*').eq('barber_id', barberProfile.id).order('date');
+  const { data, error } = await sb.from('blocked_dates').select('*').eq('barber_id', barberProfile.id).order('date');
   blockedDatesCache = error ? [] : (data || []);
 }
 function renderHolidays() {
@@ -1176,7 +1176,7 @@ function renderHolidays() {
     el.innerHTML = `<span>🚫 ${bd.date} ${bd.reason?'— '+esc(bd.reason):''}</span>
       <button class="tap text-barberred font-bold delB">✕</button>`;
     el.querySelector('.delB').onclick = async () => {
-      const { error } = await supabase.from('blocked_dates').delete().eq('id', bd.id);
+      const { error } = await sb.from('blocked_dates').delete().eq('id', bd.id);
       if (error) return toast(error.message, true);
       toast('سڕایەوە ✓');
       await loadBlockedDates();
@@ -1189,7 +1189,7 @@ document.getElementById('addHolidayBtn').onclick = async () => {
   const date = document.getElementById('holidayDate').value;
   const reason = document.getElementById('holidayReason').value.trim();
   if (!date) return toast('تکایە بەروار دیاری بکە', true);
-  const { error } = await supabase.from('blocked_dates').insert({ barber_id: barberProfile.id, date, reason });
+  const { error } = await sb.from('blocked_dates').insert({ barber_id: barberProfile.id, date, reason });
   if (error) return toast(error.message, true);
   toast('زیادکرا ✓');
   document.getElementById('holidayDate').value = '';

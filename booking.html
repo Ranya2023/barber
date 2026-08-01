@@ -161,7 +161,7 @@
 </div>
 
 <script>
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const params = new URLSearchParams(location.search);
 const barberId = params.get('b');
@@ -218,16 +218,16 @@ document.querySelectorAll('.backBtn').forEach(b=>{
 async function init(){
   if (!barberId) { showError('ئەم لینکە تەواو نییە. تکایە لینکی QR یان لینکی سەرتاشەکە بەکاربهێنە.'); return; }
   try {
-    const { data: infoRows, error: infoErr } = await supabase.rpc('rpc_get_barber_public_info', { p_barber_id: barberId });
+    const { data: infoRows, error: infoErr } = await sb.rpc('rpc_get_barber_public_info', { p_barber_id: barberId });
     if (infoErr) throw infoErr;
     barberInfo = infoRows && infoRows[0];
     if (!barberInfo || !barberInfo.active) { showError('ئەم سەرتاشە بەردەست نییە.'); return; }
     document.getElementById('shopName').textContent = barberInfo.shop_name;
 
     const [{ data: svcData }, { data: whData }, { data: bdData }] = await Promise.all([
-      supabase.from('services').select('*').eq('barber_id', barberId).order('created_at'),
-      supabase.from('working_hours').select('*').eq('barber_id', barberId),
-      supabase.from('blocked_dates').select('*').eq('barber_id', barberId)
+      sb.from('services').select('*').eq('barber_id', barberId).order('created_at'),
+      sb.from('working_hours').select('*').eq('barber_id', barberId),
+      sb.from('blocked_dates').select('*').eq('barber_id', barberId)
     ]);
     servicesCache = svcData || [];
     workingHoursCache = whData || [];
@@ -242,7 +242,7 @@ async function init(){
       document.getElementById('inpName').value = cust.name;
       document.getElementById('inpPhone').value = cust.phone;
       try {
-        const { data: up } = await supabase.rpc('rpc_get_customer_upcoming', { p_barber_id: barberId, p_customer_id: cust.customerId });
+        const { data: up } = await sb.rpc('rpc_get_customer_upcoming', { p_barber_id: barberId, p_customer_id: cust.customerId });
         if (up && up[0]) showUpcoming(up[0], cust.customerId);
       } catch(e) {}
     }
@@ -266,7 +266,7 @@ function showUpcoming(b, customerId){
     `${b.service_name} — ${weekdayName(b.date)} ${b.date} — کاتژمێر ${String(b.booking_time).substring(0,5)}`;
   document.getElementById('cancelUpcomingBtn').onclick = async () => {
     if (!confirm('دڵنیایت لە هەڵوەشاندنەوەی نۆرەکەت؟')) return;
-    await supabase.rpc('rpc_cancel_by_customer', { p_booking_id: b.booking_id, p_customer_id: customerId });
+    await sb.rpc('rpc_cancel_by_customer', { p_booking_id: b.booking_id, p_customer_id: customerId });
     el.classList.add('hidden');
   };
 }
@@ -389,7 +389,7 @@ async function loadSlots(){
   document.getElementById('slotsGrid').innerHTML = '';
   document.getElementById('noSlots').classList.add('hidden');
   try {
-    const { data: all, error } = await supabase.rpc('rpc_get_available_slots', {
+    const { data: all, error } = await sb.rpc('rpc_get_available_slots', {
       p_barber_id: barberId, p_date: state.date, p_service_id: state.serviceId
     });
     if (error) throw error;
@@ -446,7 +446,7 @@ document.getElementById('confirmBtn').onclick = async () => {
   try {
     let cust = getCustomer();
     const customerId = (cust && cust.customerId) ? cust.customerId : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-    const { error } = await supabase.rpc('rpc_create_booking', {
+    const { error } = await sb.rpc('rpc_create_booking', {
       p_barber_id: barberId, p_customer_id: customerId, p_name: state.name, p_phone: state.phone,
       p_service_id: state.serviceId, p_date: state.date, p_time: state.time
     });

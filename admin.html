@@ -88,7 +88,7 @@
 <div id="toastRoot" class="fixed bottom-6 inset-x-0 flex justify-center z-[60] pointer-events-none"></div>
 
 <script>
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function toast(msg, isError) {
   const el = document.createElement('div');
@@ -119,11 +119,11 @@ document.getElementById('loginBtn').onclick = async () => {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'چاوەڕێ بە...';
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const { data: isAdmin } = await supabase.rpc('is_admin');
+    const { data: isAdmin } = await sb.rpc('is_admin');
     if (!isAdmin) {
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       throw new Error('ئەم هەژمارە ڕێگەی چوونەژوورەوەی ئەدمینی نییە');
     }
     startApp();
@@ -135,14 +135,14 @@ document.getElementById('loginBtn').onclick = async () => {
 };
 document.getElementById('logoutBtn').onclick = async () => {
   if (!confirm('دڵنیایت لە دەرچوون؟')) return;
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   location.reload();
 };
 
 async function boot() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    const { data: isAdmin } = await supabase.rpc('is_admin');
+    const { data: isAdmin } = await sb.rpc('is_admin');
     if (isAdmin) { startApp(); return; }
   }
 }
@@ -165,8 +165,8 @@ function genCode(){
 }
 document.getElementById('newCodeBtn').onclick = async () => {
   const code = genCode();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase.from('invite_codes').insert({ code, created_by: user.id });
+  const { data: { user } } = await sb.auth.getUser();
+  const { error } = await sb.from('invite_codes').insert({ code, created_by: user.id });
   if (error) { toast(error.message, true); return; }
   loadCodes();
   showCode(code);
@@ -188,7 +188,7 @@ function showCode(code){
   document.getElementById('closeC').onclick = closeModal;
 }
 async function loadCodes(){
-  const { data, error } = await supabase.from('invite_codes').select('*').eq('used', false).order('created_at', { ascending:false });
+  const { data, error } = await sb.from('invite_codes').select('*').eq('used', false).order('created_at', { ascending:false });
   if (error) return;
   const list = document.getElementById('codeList');
   list.innerHTML = '';
@@ -205,7 +205,7 @@ async function loadCodes(){
     el.querySelector('.showB').onclick = () => showCode(c.code);
     el.querySelector('.delB').onclick = async () => {
       if (!confirm('هەڵوەشاندنەوەی ئەم کۆدە؟')) return;
-      await supabase.from('invite_codes').delete().eq('code', c.code);
+      await sb.from('invite_codes').delete().eq('code', c.code);
       loadCodes();
     };
     list.appendChild(el);
@@ -216,7 +216,7 @@ async function loadCodes(){
 //  لیستی سەرتاشەکان
 // =====================================================================
 async function loadBarbers(){
-  const { data, error } = await supabase.from('barbers').select('*').order('created_at', { ascending:false });
+  const { data, error } = await sb.from('barbers').select('*').order('created_at', { ascending:false });
   if (error) { toast(error.message, true); return; }
   render(data||[]);
 }
@@ -247,7 +247,7 @@ function render(barbers){
     el.querySelector('.linkB').onclick = () => showLink(b);
     el.querySelector('.delB').onclick = async () => {
       if (b.active && !confirm(`دڵنیایت لە ناچالاککردنی هەژماری ${b.name}؟ نۆرەکانی نامێنن بەڵام ناتوانێت بچێتە ژوورەوە.`)) return;
-      const { error } = await supabase.from('barbers').update({ active: !b.active }).eq('id', b.id);
+      const { error } = await sb.from('barbers').update({ active: !b.active }).eq('id', b.id);
       if (error) return toast(error.message, true);
       toast('نوێکرایەوە ✓');
       loadBarbers();
@@ -273,7 +273,7 @@ function openBarberForm(b){
     const shop_name = document.getElementById('mShop').value.trim() || name;
     const phone = document.getElementById('mPhone').value.trim();
     if (!name) return toast('تکایە ناو بنووسە', true);
-    const { error } = await supabase.from('barbers').update({ name, shop_name, phone }).eq('id', b.id);
+    const { error } = await sb.from('barbers').update({ name, shop_name, phone }).eq('id', b.id);
     if (error) return toast(error.message, true);
     toast('نوێکرایەوە ✓');
     closeModal();
@@ -303,7 +303,7 @@ document.getElementById('changePwBtn').onclick = () => {
   document.getElementById('mSave').onclick = async () => {
     const newPassword = document.getElementById('mNewPw').value;
     if (!newPassword || newPassword.length < 6) return toast('لانیکەم ٦ پیت/ژمارە', true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await sb.auth.updateUser({ password: newPassword });
     if (error) return toast(error.message, true);
     toast('وشەی نهێنی گۆڕدرا ✓');
     closeModal();
