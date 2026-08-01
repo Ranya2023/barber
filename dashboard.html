@@ -47,10 +47,10 @@
 
   /* Next-up hero card: chasing LED border */
   @property --led-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-  .led-card { position: relative; border-radius: 1.25rem; }
+  .led-card { position: relative; border-radius: 1.25rem; --led-c1: #C9A356; --led-c2: #F2D9A0; }
   .led-card::before {
     content: ''; position: absolute; inset: -2px; border-radius: inherit; padding: 2px;
-    background: conic-gradient(from var(--led-angle), transparent 0%, #C9A356 8%, #F2D9A0 12%, #C9A356 16%, transparent 26%, transparent 74%, #C9A356 84%, #F2D9A0 88%, #C9A356 92%, transparent 100%);
+    background: conic-gradient(from var(--led-angle), transparent 0%, var(--led-c1) 8%, var(--led-c2) 12%, var(--led-c1) 16%, transparent 26%, transparent 74%, var(--led-c1) 84%, var(--led-c2) 88%, var(--led-c1) 92%, transparent 100%);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor; mask-composite: exclude;
     animation: led-spin 3.5s linear infinite; pointer-events: none;
@@ -237,23 +237,31 @@
       <div id="qEmpty" class="hidden text-center py-14 text-base text-[#6b6259] dark:text-[#8A7F72]">هیچ کەسێک لە ڕیزدا نییە بۆ ئەم ڕۆژە 🪑</div>
 
       <button id="addQueueBtn" class="tap w-full bg-brass text-inkbg font-extrabold py-3.5 rounded-xl text-sm mt-5">+ زیادکردنی کڕیار (بێ کات)</button>
-
-      <div class="flex items-center justify-between mt-8 mb-3">
-        <h2 class="text-base font-extrabold">کڕیارە هەمیشەییەکان (بێ کات)</h2>
-        <button id="addQPermBtn" class="tap bg-brass text-inkbg font-bold px-3 py-2 rounded-lg text-xs">+ زیادکردن</button>
-      </div>
-      <div id="qPermList" class="flex flex-col gap-3"></div>
-      <div id="qPermEmpty" class="hidden text-center py-10 text-sm text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
     </section>
 
     <!-- ------------------ تابی هەمیشەیی ------------------ -->
     <section id="tabPerm" class="tabpane hidden">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-extrabold">کڕیارە هەمیشەییەکان</h2>
-        <button id="addPermBtn" class="tap bg-brass text-inkbg font-bold px-3.5 py-2.5 rounded-lg text-sm">+ زیادکردن</button>
+      <div class="flex gap-2 mb-4">
+        <button id="permModeTimed" class="tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-brass text-inkbg">⏰ بە کات</button>
+        <button id="permModeQueue" class="tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-black/5 dark:bg-white/10">🪑 بێ کات (ڕیز)</button>
       </div>
-      <div id="permList" class="flex flex-col gap-3"></div>
-      <div id="permEmpty" class="hidden text-center py-16 text-base text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
+      <div id="permTimedView">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-extrabold">کڕیارە هەمیشەییەکان</h2>
+          <button id="addPermBtn" class="tap bg-brass text-inkbg font-bold px-3.5 py-2.5 rounded-lg text-sm">+ زیادکردن</button>
+        </div>
+        <div id="permList" class="flex flex-col gap-3"></div>
+        <div id="permEmpty" class="hidden text-center py-16 text-base text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
+      </div>
+      <div id="permQueueView" class="hidden">
+        <p class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">ئەمانە بەخۆکار لە ڕۆژی خۆیان لە تابی 🪑 ڕیز دەردەکەون — لێرە تەنها بۆ بەڕێوەبردنیانە.</p>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-extrabold">کڕیارە هەمیشەییەکان (بێ کات)</h2>
+          <button id="addQPermBtn" class="tap bg-brass text-inkbg font-bold px-3.5 py-2.5 rounded-lg text-sm">+ زیادکردن</button>
+        </div>
+        <div id="qPermList" class="flex flex-col gap-3"></div>
+        <div id="qPermEmpty" class="hidden text-center py-16 text-base text-[#6b6259] dark:text-[#8A7F72]">هیچ کڕیارێکی هەمیشەیی زیاد نەکراوە</div>
+      </div>
     </section>
 
     <!-- ------------------ تابی سێرڤس ------------------ -->
@@ -646,6 +654,8 @@ async function startApp() {
   renderHolidays();
   await renderHome();
   await renderQueue();
+  const savedTab = localStorage.getItem('activeTab');
+  if (savedTab && document.getElementById('tab' + savedTab)) switchToTab(savedTab);
 }
 
 (async function boot() {
@@ -656,14 +666,30 @@ async function startApp() {
 // =====================================================================
 //  تابەکان
 // =====================================================================
+function switchToTab(name){
+  activeTab = name;
+  localStorage.setItem('activeTab', name);
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
+  document.getElementById('tab' + name).classList.remove('hidden');
+}
 document.querySelectorAll('.tabbtn').forEach(btn => {
-  btn.onclick = () => {
-    activeTab = btn.dataset.tab;
-    document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
-    document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
-    document.getElementById('tab' + activeTab).classList.remove('hidden');
-  };
+  btn.onclick = () => switchToTab(btn.dataset.tab);
 });
+
+// ---------- تابی هەمیشەیی: کلیلی بە کات / بێ کات ----------
+document.getElementById('permModeTimed').onclick = () => {
+  document.getElementById('permModeTimed').className = 'tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-brass text-inkbg';
+  document.getElementById('permModeQueue').className = 'tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-black/5 dark:bg-white/10';
+  document.getElementById('permTimedView').classList.remove('hidden');
+  document.getElementById('permQueueView').classList.add('hidden');
+};
+document.getElementById('permModeQueue').onclick = () => {
+  document.getElementById('permModeQueue').className = 'tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-brass text-inkbg';
+  document.getElementById('permModeTimed').className = 'tap flex-1 py-2.5 rounded-xl text-sm font-bold bg-black/5 dark:bg-white/10';
+  document.getElementById('permQueueView').classList.remove('hidden');
+  document.getElementById('permTimedView').classList.add('hidden');
+};
 
 // =====================================================================
 //  تابی سەرەکی — هەمیشەیی → نۆرە
@@ -899,9 +925,9 @@ let queueEntries = [];
 let queuePermCache = [];
 let queueDoneExpanded = localStorage.getItem('queueDoneExpanded') === '1';
 const PERIODS = [
-  { key:'بەیانی', icon:'🌅', bg:'bg-amber-500/10', border:'border-amber-500/25', text:'text-amber-700 dark:text-amber-400' },
-  { key:'نیوەڕۆ', icon:'☀️', bg:'bg-sky-500/10', border:'border-sky-500/25', text:'text-sky-700 dark:text-sky-400' },
-  { key:'ئێوارە', icon:'🌆', bg:'bg-purple-500/10', border:'border-purple-500/25', text:'text-purple-700 dark:text-purple-400' }
+  { key:'بەیانی', icon:'🌅', bg:'bg-amber-500/10', border:'border-amber-500/25', text:'text-amber-700 dark:text-amber-400', led1:'#F59E0B', led2:'#FDE68A' },
+  { key:'نیوەڕۆ', icon:'☀️', bg:'bg-sky-500/10', border:'border-sky-500/25', text:'text-sky-700 dark:text-sky-400', led1:'#0EA5E9', led2:'#BAE6FD' },
+  { key:'ئێوارە', icon:'🌆', bg:'bg-purple-500/10', border:'border-purple-500/25', text:'text-purple-700 dark:text-purple-400', led1:'#A855F7', led2:'#E9D5FF' }
 ];
 
 async function loadQueuePermClients(){
@@ -1015,8 +1041,9 @@ async function renderQueue() {
 function queueHeroCard(q) {
   const el = document.createElement('div');
   el.className = 'led-card mb-4';
-  const phone = q.phone ? intlPhone(q.phone) : '';
   const per = PERIODS.find(p=>p.key===q.period);
+  if (per) { el.style.setProperty('--led-c1', per.led1); el.style.setProperty('--led-c2', per.led2); }
+  const phone = q.phone ? intlPhone(q.phone) : '';
   const typeTag = q.type==='هەمیشەیی' ? 'هەمیشەیی' : 'کڕیار';
   el.innerHTML = `
     <div class="rounded-2xl overflow-hidden shadow-lg tap">
@@ -1096,11 +1123,14 @@ function openQueueDetail(q) {
     </div>
     <div class="text-sm text-[#6b6259] dark:text-[#8A7F72] mb-4">${esc(q.service_name||'')} · ${typeLabel}${phone?' · '+phone:''}</div>
 
-    <div class="flex items-center justify-center gap-2 bg-[#F7F3EC] dark:bg-inkbg rounded-xl px-3 py-3 mb-4">
-      <span class="text-sm font-semibold">کات:</span>
-      <select id="qPeriodSel" class="rounded-lg px-3 py-2 bg-white dark:bg-panel border border-black/10 dark:border-white/10 text-sm font-bold">
-        ${PERIODS.map(p=>`<option value="${p.key}" ${p.key===q.period?'selected':''}>${p.icon} ${p.key}</option>`).join('')}
-      </select>
+    <div class="bg-[#F7F3EC] dark:bg-inkbg rounded-xl px-3 py-3 mb-4">
+      <div class="text-xs font-bold text-[#6b6259] dark:text-[#8A7F72] mb-2 text-center">بۆ کاتێکی تر بیبە</div>
+      <div class="grid grid-cols-3 gap-2" id="qPeriodBtns">
+        ${PERIODS.map(p=>`
+          <button type="button" data-period="${p.key}" class="qPeriodBtn tap rounded-lg py-2.5 text-sm font-bold border ${p.key===q.period ? 'bg-brass text-inkbg border-brass' : 'bg-white dark:bg-panel border-black/10 dark:border-white/10'}">
+            ${p.icon}<br>${p.key}
+          </button>`).join('')}
+      </div>
     </div>
 
     ${phone ? `<div class="grid grid-cols-4 gap-2 mb-4">
@@ -1113,17 +1143,20 @@ function openQueueDetail(q) {
     <div id="qActions" class="flex flex-wrap gap-2 mb-2"></div>
   `);
 
-  document.getElementById('qPeriodSel').onchange = async (e) => {
-    const newPeriod = e.target.value;
-    try {
-      const nextPos = await nextQueuePosition(q.date, newPeriod);
-      const { error } = await sb.from('queue_entries').update({ period: newPeriod, position: nextPos }).eq('id', q.id);
-      if (error) throw error;
-      toast('گۆڕدرا ✓');
-      closeModal();
-      renderQueue();
-    } catch(err) { toast(err.message || 'ئینتەرنێت نییە', true); }
-  };
+  document.querySelectorAll('.qPeriodBtn').forEach(btn => {
+    btn.onclick = async () => {
+      const newPeriod = btn.dataset.period;
+      if (newPeriod === q.period) return;
+      try {
+        const nextPos = await nextQueuePosition(q.date, newPeriod);
+        const { error } = await sb.from('queue_entries').update({ period: newPeriod, position: nextPos }).eq('id', q.id);
+        if (error) throw error;
+        toast('گۆڕدرا بۆ ' + newPeriod + ' ✓');
+        closeModal();
+        renderQueue();
+      } catch(err) { toast(err.message || 'ئینتەرنێت نییە', true); }
+    };
+  });
 
   const actions = document.getElementById('qActions');
   const mkBtn = (label, cls, fn) => { const btn=document.createElement('button'); btn.className='tap flex-1 text-sm font-bold px-3 py-2.5 rounded-xl '+cls; btn.textContent=label; btn.onclick=fn; return btn; };
